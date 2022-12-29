@@ -1,0 +1,39 @@
+{
+  "name": "forecast-control-module",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/christiancesar/forecast-control-module.git",
+  "author": "Christian Cesar <christiancnp@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "dev:server": "ts-node-dev --transpile-only --inspect --ignore-watch node_modules src/index.ts",
+    "prisma:generate": "prisma generate --schema ./src/shared/database/prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.44.0",
+    "@typescript-eslint/parser": "^5.44.0",
+    "bson": "^4.7.0",
+    "eslint": "^8.28.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "prettier": "^2.8.0",
+    "ts-node": "^10.7.0",
+    "ts-node-dev": "^1.1.8",
+    "tsconfig-paths": "^4.1.0",
+    "tsyringe": "^4.7.0",
+    "typescript": "^4.6.4"
+  },
+  "dependencies": {
+    "@prisma/client": "^4.1.0",
+    "@types/cors": "^2.8.12",
+    "@types/express": "^4.17.13",
+    "@types/uuid": "^8.3.4",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.1",
+    "prisma": "^4.1.0",
+    "puppeteer": "^19.4.1",
+    "uuid": "^8.3.2"
+  }
+}
