@@ -6,7 +6,7 @@
   "configurations": [
     {
       "type": "node",
-      "request": "launch",
+      "request": "attach",
       "protocol": "inspector",
       "restart": true,
       "name": "DebugNodejs",

@@ -11,7 +11,9 @@ import "dotenv/config";
   });
 
   console.log(process.env.WVETRO_USER);
+
   await page.setJavaScriptEnabled(false);
+
   await page.type("#vLOGIN", process.env.WVETRO_USER!);
 
   await page.type("#vSENHA", process.env.WVETRO_PASSWORD!);
@@ -22,32 +24,101 @@ import "dotenv/config";
 
   await page.click("#ENTRAR");
 
-  await page.waitForNavigation();
+  await page.waitForNavigation({
+    waitUntil: "networkidle2",
+  });
+
+  await page.waitForSelector("#btn_orcamentoview");
 
   await page.click("#btn_orcamentoview");
 
-  // // Type into search box.
-  // await page.type(".devsite-search-field", "Headless Chrome");
+  await page.waitForNavigation({
+    waitUntil: "networkidle2",
+  });
 
-  // // Wait for suggest overlay to appear and click "show all results".
-  // const allResultsSelector = ".devsite-suggest-all-results";
-  // await page.waitForSelector(allResultsSelector);
-  // await page.click(allResultsSelector);
+  await page.waitForSelector("#GridContainerDiv");
 
-  // // Wait for the results page to load and display the results.
-  // const resultsSelector = ".gsc-results .gs-title";
-  // await page.waitForSelector(resultsSelector);
+  const budgets = await page.evaluate(() => {
+    const tHead = document.querySelector("thead");
+    const tRow = tHead!.childNodes;
 
-  // // Extract the results from the page.
-  // const links = await page.evaluate((resultsSelector) => {
-  //   return [...document.querySelectorAll(resultsSelector)].map((anchor) => {
-  //     const title = anchor.textContent.split("|")[0].trim();
-  //     return `${title} - ${anchor.href}`;
-  //   });
-  // }, resultsSelector);
+    // console.log(tRow[0].childNodes.length)
+    const headValuesArray = [];
 
-  // // Print all the files.
-  // console.log(links.join("\n"));
+    for (
+      let headIndex = 0;
+      headIndex < tRow[0].childNodes.length;
+      headIndex++
+    ) {
+      //     console.log(tRow[0].childNodes[headIndex].innerText)
+      headValuesArray.push(
+        (tRow[0].childNodes[headIndex] as HTMLElement).innerText
+      );
+    }
+    const newValues = headValuesArray.map((value) => {
+      return value.replace(/[^A-Z0-9]+/gi, "");
+      //   console.log(value.replace('.', ''))
+    });
+
+    // console.log(headValuesArray);
+
+    const budgetValuesArray = [];
+    const tBody = document.querySelector("#GridContainerTbl tbody");
+    const tRowBody = tBody!.childNodes;
+    // console.log(tRowBody)
+
+    for (let rowBodyIndex = 0; rowBodyIndex < tRowBody.length; rowBodyIndex++) {
+      const tCollumnBody = tRowBody[rowBodyIndex].childNodes;
+      //   console.log(tCollumnBody)
+      const collumnData = [];
+      for (
+        let collumnBodyIndex = 0;
+        collumnBodyIndex < tCollumnBody.length;
+        collumnBodyIndex++
+      ) {
+        //     console.log(tCollumnBody[collumnBodyIndex].innerText)
+
+        collumnData.push(
+          (tCollumnBody[collumnBodyIndex] as HTMLElement).innerText
+        );
+        //     console.log(collumnData)
+      }
+      //   console.log(collumnData)
+      budgetValuesArray.push(collumnData);
+    }
+
+    // console.log(budgetValuesArray);
+    const budgets = [];
+
+    for (
+      let bodyValuesIndex = 0;
+      bodyValuesIndex < budgetValuesArray.length;
+      bodyValuesIndex++
+    ) {
+      let budget = {};
+
+      for (
+        let index = 0;
+        index < budgetValuesArray[bodyValuesIndex].length;
+        index++
+      ) {
+        const valuesFmt = {
+          [newValues[index]]: budgetValuesArray[bodyValuesIndex][index],
+        };
+        budget = {
+          ...budget,
+          ...valuesFmt,
+        };
+      }
+
+      budgets.push(budget);
+    }
+
+    // console.log(budgets);
+    return budgets;
+  });
+
+  console.log(budgets);
 
   // await browser.close();
 })();
