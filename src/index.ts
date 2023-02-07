@@ -47,18 +47,17 @@ import fs from "fs";
       document.querySelector(".btn.btn-primary.dropdown-toggle") as HTMLElement
     ).innerText.match(/(\d+)(?!.*\d)/g);
 
-    console.log(buttonElementTextValue ? Number(buttonElementTextValue[0]) : 0);
-
     return buttonElementTextValue ? Number(buttonElementTextValue[0]) : 0;
   });
 
   const budgetsRepository = [];
 
-  for (let pageNumber = 0; pageNumber < 5; pageNumber++) {
+  for (let pageNumber = 0; pageNumber < 1; pageNumber++) {
     // get budgets in table and normalize data
     let budgets = [];
 
     budgets = await page.evaluate(() => {
+      //GET HEADERS VALUES
       const tHead = document.querySelector("thead");
       const tRow = tHead!.childNodes;
 
@@ -73,14 +72,20 @@ import fs from "fs";
           (tRow[0].childNodes[headIndex] as HTMLElement).innerText
         );
       }
+
+      headValuesArray.push("link");
+
       const newValues = headValuesArray.map((value) => {
         return value.replace(/[^A-Z0-9]+/gi, "");
       });
 
+      //GET TABLE BODY VALUES
       const budgetValuesArray = [];
 
       const tBody = document.querySelector("#GridContainerTbl tbody");
       const tRowBody = tBody!.childNodes;
+
+      let customerCaunt = 0;
 
       for (
         let rowBodyIndex = 0;
@@ -89,6 +94,7 @@ import fs from "fs";
       ) {
         const tCollumnBody = tRowBody[rowBodyIndex].childNodes;
         const collumnData = [];
+
         for (
           let collumnBodyIndex = 0;
           collumnBodyIndex < tCollumnBody.length;
@@ -98,6 +104,19 @@ import fs from "fs";
             (tCollumnBody[collumnBodyIndex] as HTMLElement).innerText
           );
         }
+
+        customerCaunt++;
+
+        const linkElement = (
+          document.querySelector(
+            `td>p>span#span_CLIENTENOMERAZAO_${customerCaunt
+              .toString()
+              .padStart(4, "0")}>a`
+          ) as HTMLAnchorElement
+        ).href;
+
+        collumnData.push(linkElement);
+
         budgetValuesArray.push(collumnData);
       }
 
