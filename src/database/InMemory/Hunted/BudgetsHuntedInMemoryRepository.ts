@@ -1,6 +1,6 @@
 import { BudgetHunterDTO } from "dtos/BudgetHunterDTO";
 
-export class BudgetsInMemoryRepository {
+export class BudgetsHuntedInMemoryRepository {
   private budgets: BudgetHunterDTO[] = [];
 
   async save(budget: BudgetHunterDTO): Promise<void> {

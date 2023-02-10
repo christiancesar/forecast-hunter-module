@@ -1,8 +1,9 @@
-import { BudgetsInMemoryRepository } from "./database/BudgetsInMemoryRepository";
+import { BudgetItemsHuntedInMemoryRepository } from "./database/InMemory/Hunted/BudgetItemsHuntedInMemoryRepository";
+import { BudgetsHuntedInMemoryRepository } from "./database/InMemory/Hunted/BudgetsHuntedInMemoryRepository";
 import "dotenv/config";
-import { BudgetHunterDTO } from "./dtos/BudgetHunterDTO";
-import fs from "fs";
+import { BudgetItemHuntedDTO } from "./dtos/BudgetItemsHunterDTO";
 import puppeteer, { Browser, Page } from "puppeteer";
+import { BudgetHunterDTO } from "./dtos/BudgetHunterDTO";
 
 type BudgetHunterParams = {
   user: string | undefined;
@@ -19,7 +20,8 @@ export class BudgetHunter {
   private browser: Browser;
   private page: Page;
 
-  private budgetsInMemoryRepository: BudgetsInMemoryRepository;
+  private budgetsHuntedInMemoryRepository: BudgetsHuntedInMemoryRepository;
+  private budgetItemsHuntedInMemoryRepository: BudgetItemsHuntedInMemoryRepository;
 
   constructor({ user, password, license, url }: BudgetHunterParams) {
     this.user = user;
@@ -29,11 +31,14 @@ export class BudgetHunter {
     this.browser = {} as Browser;
     this.page = {} as Page;
 
-    this.budgetsInMemoryRepository = new BudgetsInMemoryRepository();
+    this.budgetsHuntedInMemoryRepository =
+      new BudgetsHuntedInMemoryRepository();
+    this.budgetItemsHuntedInMemoryRepository =
+      new BudgetItemsHuntedInMemoryRepository();
   }
 
   public async load(): Promise<void> {
-    this.browser = await puppeteer.launch({ headless: false });
+    this.browser = await puppeteer.launch({ headless: false, devtools: true });
     this.page = await this.browser.newPage();
   }
 
@@ -87,7 +92,7 @@ export class BudgetHunter {
       return buttonElementTextValue ? Number(buttonElementTextValue[0]) : 0;
     });
 
-    const budgetsRepository: BudgetHunterDTO[] = [];
+    const budgetsHunted: BudgetHunterDTO[] = [];
 
     for (let pageNumber = 0; pageNumber < 1; pageNumber++) {
       // get budgets in table and normalize data
@@ -188,7 +193,7 @@ export class BudgetHunter {
         return budgetsValuesFmt;
       });
 
-      budgetsRepository.push(...budgets);
+      budgetsHunted.push(...budgets);
 
       await this.page.waitForSelector(".next");
       await this.page.click(".next", { delay: 2000 });
@@ -196,14 +201,14 @@ export class BudgetHunter {
       await this.page.waitForSelector("#GridContainerDiv");
     }
 
-    await this.budgetsInMemoryRepository.saveAll(budgetsRepository);
+    await this.budgetsHuntedInMemoryRepository.saveAll(budgetsHunted);
 
-    // console.log(budgetsRepository);
-    // console.log(budgetsRepository.length);
+    // console.log(budgetsHunted);
+    // console.log(budgetsHunted.length);
 
     // fs.writeFile(
     //   "budgets.json",
-    //   JSON.stringify(budgetsRepository),
+    //   JSON.stringify(budgetsHunted),
     //   { encoding: "utf8" },
     //   (err) => {
     //     console.log(err);
@@ -214,73 +219,94 @@ export class BudgetHunter {
   }
 
   public async getBudgetItems(): Promise<void> {
-    const budgetsHunter = await this.budgetsInMemoryRepository.findAll();
+    const budgetsHunter = await this.budgetsHuntedInMemoryRepository.findAll();
 
-    budgetsHunter.forEach(async (budget) => {
-      await this.page.goto(budget.link, {
-        waitUntil: "domcontentloaded",
+    console.log("Start hunting budget items...");
+
+    const budgetItemsHuntedRepository = [] as BudgetItemHuntedDTO[];
+
+    for (let index = 0; index < budgetsHunter.length; index++) {
+      await this.page.goto(budgetsHunter[index].link, {
+        waitUntil: "networkidle0",
       });
 
-      // await this.page.waitForNavigation({
-      //   waitUntil: "networkidle0",
-      // });
+      await this.page.waitForSelector("#W0085W0002GridContainerTbl");
 
-      const budgetItemsHunter = await this.page.evaluate(() => {
-        const budgetItemsTableHeadElement = document.querySelectorAll(
-          ".Table table#W0085W0002GridContainerTbl thead>tr>th"
-        );
+      const budgetsItemsHunted = await this.page
+        .evaluate(() => {
+          // eslint-disable-next-line no-debugger
+          // debugger;
 
-        const budgetItemsTableHeadNames = [] as any[];
+          const budgetItemsTableHeadElement = document.querySelectorAll(
+            ".Table table#W0085W0002GridContainerTbl thead>tr>th"
+          );
 
-        budgetItemsTableHeadElement.forEach((spanElement, index) => {
-          let value;
+          console.log(budgetItemsTableHeadElement);
 
-          if ((spanElement as HTMLElement).innerText.trim() === "") {
-            value = "void";
-          } else {
-            value = (spanElement as HTMLElement).innerText.replace(
-              /[^A-Z0-9]+/gi,
-              ""
-            );
-          }
+          const budgetItemsTableHeadNames = [] as string[];
 
-          budgetItemsTableHeadNames.push(`${value}${index}`);
-        });
+          budgetItemsTableHeadElement.forEach((spanElement, index) => {
+            let value;
 
-        const budgetItems = (
-          document.querySelector(
-            "#W0085W0002GridContainerDataV"
-          ) as HTMLInputElement
-        ).value;
+            if ((spanElement as HTMLElement).innerText.trim() === "") {
+              value = "void";
+            } else {
+              value = (spanElement as HTMLElement).innerText.replace(
+                /[^A-Z0-9]+/gi,
+                ""
+              );
+            }
 
-        const budgetItemsData = JSON.parse(budgetItems);
-
-        const budgetItemsRepository = [] as any[];
-
-        budgetItemsData.forEach((budgetItemsArray: any[]) => {
-          let budgetItemsNormalizedData = {};
-
-          budgetItemsArray.forEach((element, index) => {
-            const budgetItemsNormalizedValue = {
-              [budgetItemsTableHeadNames[index]]: element,
-            };
-
-            budgetItemsNormalizedData = {
-              ...budgetItemsNormalizedData,
-              ...budgetItemsNormalizedValue,
-            };
+            budgetItemsTableHeadNames.push(`${value}${index}`);
           });
 
-          budgetItemsRepository.push(budgetItemsNormalizedData);
+          const budgetItems = (
+            document.querySelector(
+              "#W0085W0002GridContainerDataV"
+            ) as HTMLInputElement
+          ).value;
+
+          const budgetItemsData = JSON.parse(budgetItems);
+
+          const budgetItemsHunted: BudgetItemHuntedDTO[] = [];
+
+          budgetItemsData.forEach((budgetItemsArray: BudgetItemHuntedDTO[]) => {
+            let budgetItemsNormalizedData = {} as BudgetItemHuntedDTO;
+
+            budgetItemsArray.forEach((element, index) => {
+              const budgetItemsNormalizedValue = {
+                [budgetItemsTableHeadNames[index]]: element,
+              };
+
+              budgetItemsNormalizedData = {
+                ...budgetItemsNormalizedData,
+                ...budgetItemsNormalizedValue,
+              };
+            });
+
+            console.log(budgetItemsNormalizedData);
+
+            budgetItemsHunted.push(budgetItemsNormalizedData);
+          });
+
+          return budgetItemsHunted;
+        })
+        .catch((err) => {
+          console.log(err);
         });
 
-        return budgetItemsRepository;
-      });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      budgetItemsHuntedRepository.push(...budgetsItemsHunted!);
+    }
+    console.log("Finished hunting budget items...");
 
-      console.log(budgetItemsHunter);
+    await this.budgetItemsHuntedInMemoryRepository.saveAll(
+      budgetItemsHuntedRepository
+    );
 
-      throw new Error("This not is a error");
-    });
+    console.log("Save budget items on database...");
+
+    console.log(await this.budgetItemsHuntedInMemoryRepository);
   }
 
   public async getCost() {
