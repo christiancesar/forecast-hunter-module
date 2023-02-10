@@ -7,7 +7,7 @@ import "dotenv/config";
   const budgetHunter = new BudgetHunter({
     user: process.env.WVETRO_USER,
     password: process.env.WVETRO_PASSWORD,
-    license: process.env.WVETRO_LICENCE,
+    license: process.env.WVETRO_LICENSE,
     url,
   });
 
@@ -36,7 +36,7 @@ import "dotenv/config";
 
 //   await page.type(
 //     "#vLICENCAIDAUX",
-//     process.env.WVETRO_LICENCE! || "INPUT YOUR SETTINGS"
+//     process.env.WVETRO_LICENSE! || "INPUT YOUR SETTINGS"
 //   );
 
 //   await page.setJavaScriptEnabled(true);
