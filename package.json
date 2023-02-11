@@ -1,12 +1,12 @@
 {
   "name": "forecast-control-module",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "index.ts",
   "repository": "https://github.com/christiancesar/forecast-control-module.git",
   "author": "Christian Cesar <christiancnp@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "dev:server": "ts-node-dev --transpile-only --inspect --ignore-watch node_modules src/index.ts",
+    "dev:server": "ts-node-dev --transpile-only --inspect --ignore-watch node_modules src/database/mappers/BudgetHunterMapper.ts",
     "prisma:generate": "prisma generate --schema ./src/shared/database/prisma/schema.prisma"
   },
   "devDependencies": {

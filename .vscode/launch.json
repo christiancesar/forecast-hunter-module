@@ -5,22 +5,14 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Attach",
-      "port": 9229,
+      "type": "node",
       "request": "attach",
+      "protocol": "inspector",
+      "restart": true,
+      "name": "DebugNodejs",
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "type": "node"
-    },
-
-    // {
-    //   "type": "node",
-    //   "request": "launch",
-    //   "restart": true,
-    //   "name": "DebugNodejs",
-    //   "program": "${workspaceFolder}\\index.js",
-
-    // }
+    }
   ]
 }
