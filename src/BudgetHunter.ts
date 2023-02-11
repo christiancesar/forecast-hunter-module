@@ -241,8 +241,6 @@ export class BudgetHunter {
             ".Table table#W0085W0002GridContainerTbl thead>tr>th"
           );
 
-          console.log(budgetItemsTableHeadElement);
-
           const budgetItemsTableHeadNames = [] as string[];
 
           budgetItemsTableHeadElement.forEach((spanElement, index) => {
@@ -284,8 +282,6 @@ export class BudgetHunter {
               };
             });
 
-            console.log(budgetItemsNormalizedData);
-
             budgetItemsHunted.push(budgetItemsNormalizedData);
           });
 
@@ -305,8 +301,6 @@ export class BudgetHunter {
     );
 
     console.log("Save budget items on database...");
-
-    console.log(await this.budgetItemsHuntedInMemoryRepository);
   }
 
   public async getCost() {
