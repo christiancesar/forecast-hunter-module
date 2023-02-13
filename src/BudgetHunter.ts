@@ -1,9 +1,10 @@
 import { BudgetItemsHuntedInMemoryRepository } from "./database/InMemory/Hunted/BudgetItemsHuntedInMemoryRepository";
 import { BudgetsHuntedInMemoryRepository } from "./database/InMemory/Hunted/BudgetsHuntedInMemoryRepository";
 import "dotenv/config";
-import { BudgetItemHuntedDTO } from "./dtos/BudgetItemsHunterDTO";
+import { BudgetItemHuntedDTO } from "./dtos/BudgetItemHuntedDTO";
 import puppeteer, { Browser, Page } from "puppeteer";
-import { BudgetHunterDTO } from "./dtos/BudgetHunterDTO";
+import { BudgetHuntedDTO } from "./dtos/BudgetHuntedDTO";
+import { createJsonFile } from "./shared/helpers/createJsonFile";
 
 type BudgetHunterParams = {
   user: string | undefined;
@@ -12,6 +13,30 @@ type BudgetHunterParams = {
   url: string;
 };
 
+type StillCostHunted = {
+  Id: string;
+  CDIGO: string;
+  SEUCDIGO: string;
+  Nome: string;
+  COR: string;
+  PESO: string;
+  Peso: string;
+  ML: string;
+  CUSTOKGML: string;
+  VlrCusto: string;
+  VLRVENDA: string;
+  Diferena: string;
+  VlrTrat: string;
+  MLSobra: string;
+  MLSucata: string;
+  PesoSobra: string;
+  PesoSucata: string;
+  VlrSobra: string;
+  VlrSucata: string;
+  QTBARRAS: string;
+  ID: string;
+  VLRCUSTOTRAT: string;
+};
 export class BudgetHunter {
   private user: string | undefined;
   private password: string | undefined;
@@ -38,11 +63,14 @@ export class BudgetHunter {
   }
 
   public async load(): Promise<void> {
+    console.log("\n[SETTINGS LOADING]");
     this.browser = await puppeteer.launch({ headless: false, devtools: true });
     this.page = await this.browser.newPage();
   }
 
   public async getBudgets(): Promise<void> {
+    console.log("\n[BUDGET]");
+    console.log("Starting to get budgets...");
     // await page.waitForNavigation();
     await this.page.goto(this.url, {
       waitUntil: "networkidle2",
@@ -63,9 +91,15 @@ export class BudgetHunter {
 
     await this.page.click("#ENTRAR");
 
-    await this.page.waitForNavigation({
-      waitUntil: "networkidle0",
-    });
+    await this.page.waitForSelector("#page-wrapper");
+
+    await this.page.goto(
+      "https://sistema.wvetro.com.br/wvetro/app.wvetro.home"
+    );
+
+    // await this.page.waitForNavigation({
+    //   waitUntil: "networkidle0",
+    // });
 
     await this.page.waitForSelector("#btn_orcamentoview");
 
@@ -92,13 +126,13 @@ export class BudgetHunter {
       return buttonElementTextValue ? Number(buttonElementTextValue[0]) : 0;
     });
 
-    const budgetsHunted: BudgetHunterDTO[] = [];
+    const budgetsHunted: BudgetHuntedDTO[] = [];
 
     for (let pageNumber = 0; pageNumber < 1; pageNumber++) {
       // get budgets in table and normalize data
-      let budgets: BudgetHunterDTO[] = [];
+      let budgets: BudgetHuntedDTO[] = [];
 
-      budgets = await this.page.evaluate((): BudgetHunterDTO[] => {
+      budgets = await this.page.evaluate((): BudgetHuntedDTO[] => {
         //GET HEADERS VALUES
         const tHead = document.querySelector("thead");
         const tRow = tHead!.childNodes;
@@ -163,14 +197,14 @@ export class BudgetHunter {
         }
 
         //eslint-disable-next-line
-        let budgetsValuesFmt: BudgetHunterDTO[] = [];
+        let budgetsValuesFmt: BudgetHuntedDTO[] = [];
 
         for (
           let bodyValuesIndex = 0;
           bodyValuesIndex < budgetValuesArray.length;
           bodyValuesIndex++
         ) {
-          let budget = {} as BudgetHunterDTO;
+          let budget = {} as BudgetHuntedDTO;
 
           for (
             let index = 0;
@@ -200,28 +234,20 @@ export class BudgetHunter {
 
       await this.page.waitForSelector("#GridContainerDiv");
     }
+    console.log("Finished to get budgets");
+
+    console.log("Start saving budgets in database...");
 
     await this.budgetsHuntedInMemoryRepository.saveAll(budgetsHunted);
 
-    // console.log(budgetsHunted);
-    // console.log(budgetsHunted.length);
-
-    // fs.writeFile(
-    //   "budgets.json",
-    //   JSON.stringify(budgetsHunted),
-    //   { encoding: "utf8" },
-    //   (err) => {
-    //     console.log(err);
-    //   }
-    // );
-
-    // await browser.close();
+    console.log("Finished saving budgets in database...");
   }
 
   public async getBudgetItems(): Promise<void> {
-    const budgetsHunter = await this.budgetsHuntedInMemoryRepository.findAll();
-
+    console.log("\n[BUDGET ITEMS]");
     console.log("Start hunting budget items...");
+
+    const budgetsHunter = await this.budgetsHuntedInMemoryRepository.findAll();
 
     const budgetItemsHuntedRepository = [] as BudgetItemHuntedDTO[];
 
@@ -232,8 +258,8 @@ export class BudgetHunter {
 
       await this.page.waitForSelector("#W0085W0002GridContainerTbl");
 
-      const budgetsItemsHunted = await this.page
-        .evaluate(() => {
+      const values = await this.page
+        .evaluate(async () => {
           // eslint-disable-next-line no-debugger
           // debugger;
 
@@ -285,124 +311,216 @@ export class BudgetHunter {
             budgetItemsHunted.push(budgetItemsNormalizedData);
           });
 
-          return budgetItemsHunted;
+          const cardHeader = [
+            "itenscesta",
+            "vendaitens",
+            "valorbruto",
+            "valordesconto",
+            "valorliquido",
+          ];
+
+          const cardsValue = [] as string[];
+
+          document.querySelectorAll(".huge").forEach((element) => {
+            cardsValue.push((element as HTMLElement).innerText);
+          });
+
+          let cardAmountRepository = {} as { [key: string]: string };
+
+          cardHeader.forEach((header, index) => {
+            cardAmountRepository = {
+              ...cardAmountRepository,
+              [header]: cardsValue[index],
+            };
+          });
+
+          return { cardAmountRepository, budgetItemsHunted };
         })
         .catch((err) => {
           console.log(err);
         });
 
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      budgetItemsHuntedRepository.push(...budgetsItemsHunted!);
+      await this.page.click(".panel.panel-green>a");
+
+      console.log("\n[BUDGET COST]");
+
+      console.log("Start hunting still costs ...");
+      const stillCostHunted = await this.getStill();
+
+      // console.log("Start hunting attachment costs ...");
+      // const attachmentCostHunted = await this.getAttachment();
+
+      // console.log("Start hunting glass costs ...");
+      // const glassConstHutend = await this.getGlass();
+
+      budgetsHunter[index] = {
+        ...budgetsHunter[index],
+        ...values!.cardAmountRepository,
+        cost: {
+          still: stillCostHunted,
+        },
+        itens: values!.budgetItemsHunted,
+      };
+
+      await this.budgetsHuntedInMemoryRepository.update(budgetsHunter[index]);
+
+      console.log(
+        `Updated budget ${budgetsHunter[index].NroOrc} in database ✔`
+      );
     }
-    console.log("Finished hunting budget items...");
 
-    await this.budgetItemsHuntedInMemoryRepository.saveAll(
-      budgetItemsHuntedRepository
-    );
+    const budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
 
-    console.log("Save budget items on database...");
+    createJsonFile("budgets", budgetsHunted);
   }
 
   public async getCost() {
-    //Acessando conferir valores
-    const cardGreen = document.querySelector(".panel.panel-green>a");
+    const budgetsHunter = await this.budgetsHuntedInMemoryRepository.findAll();
 
-    //Pegando valores de "Custo"
-    const costs = document.querySelectorAll(
-      "#W0046TBLFINANCEIROR_0002 .row span"
-    );
-    const costsObeject = {
-      sold: (costs[0] as HTMLElement).innerText,
-      cost: (costs[1] as HTMLElement).innerText,
-      difference: (costs[2] as HTMLElement).innerText,
-      percent: (costs[3] as HTMLElement).innerText,
-    };
+    console.log("Start hunting cost ...");
 
-    //Valores dos Materiais Utilizados
-    //Perfil
-    const still = document.querySelectorAll(
-      "#W0046W0096TBLFINANCEIRO_0001 span"
-    );
-    const stillCost = {
-      sold: (still[0] as HTMLElement).innerText,
-      cost: (still[1] as HTMLElement).innerText,
-      difference: (still[2] as HTMLElement).innerText,
-      percent: (still[3] as HTMLElement).innerText,
-    };
+    const budgetCost = [] as any[];
 
-    //Acessorios
-    const attachment = document.querySelectorAll(
-      "#W0046W0096TBLFINANCEIRO_0002 span"
-    );
-    const attachmentCost = {
-      sold: (attachment[0] as HTMLElement).innerText,
-      cost: (attachment[1] as HTMLElement).innerText,
-      difference: (attachment[2] as HTMLElement).innerText,
-      percent: (attachment[3] as HTMLElement).innerText,
-    };
+    for (let index = 0; index < budgetsHunter.length; index++) {
+      await this.page.goto(budgetsHunter[index].link, {
+        waitUntil: "networkidle0",
+      });
 
-    //Vidros
-    const glass = document.querySelectorAll(
-      "#W0046W0096TBLFINANCEIRO_0003 span"
-    );
-    const glassCost = {
-      sold: (glass[0] as HTMLElement).innerText,
-      cost: (glass[1] as HTMLElement).innerText,
-      difference: (glass[2] as HTMLElement).innerText,
-      percent: (glass[3] as HTMLElement).innerText,
-    };
+      await this.page.waitForSelector(".panel.panel-green>a");
+
+      await this.page.click(".panel.panel-green>a", { delay: 2000 });
+
+      await this.page.waitForSelector("#W0046DVPANEL_PNLVIDROSContainer");
+
+      await this.page.evaluate(async () => {
+        //Pegando valores de "Custo"
+
+        // eslint-disable-next-line no-debugger
+        debugger;
+
+        const costs = document.querySelectorAll(
+          "#W0046TBLFINANCEIROR_0002 .row span"
+        );
+
+        const costsGeneral = {
+          sold: (costs[0] as HTMLElement).innerText,
+          cost: (costs[1] as HTMLElement).innerText,
+          difference: (costs[2] as HTMLElement).innerText,
+          percent: (costs[3] as HTMLElement).innerText,
+        };
+
+        //Valores dos Materiais Utilizados
+        //Perfil
+        const still = document.querySelectorAll(
+          "#W0046W0096TBLFINANCEIRO_0001 span"
+        );
+
+        const stillCost = {
+          sold: (still[0] as HTMLElement).innerText,
+          cost: (still[1] as HTMLElement).innerText,
+          difference: (still[2] as HTMLElement).innerText,
+          percent: (still[3] as HTMLElement).innerText,
+        };
+
+        //Acessorios
+        const attachment = document.querySelectorAll(
+          "#W0046W0096TBLFINANCEIRO_0002 span"
+        );
+
+        const attachmentCost = {
+          sold: (attachment[0] as HTMLElement).innerText,
+          cost: (attachment[1] as HTMLElement).innerText,
+          difference: (attachment[2] as HTMLElement).innerText,
+          percent: (attachment[3] as HTMLElement).innerText,
+        };
+
+        //Vidros
+        const glass = document.querySelectorAll(
+          "#W0046W0096TBLFINANCEIRO_0003 span"
+        );
+
+        const glassCost = {
+          sold: (glass[0] as HTMLElement).innerText,
+          cost: (glass[1] as HTMLElement).innerText,
+          difference: (glass[2] as HTMLElement).innerText,
+          percent: (glass[3] as HTMLElement).innerText,
+        };
+
+        console.log("Cost: ", costsGeneral);
+        console.log("Strill: ", stillCost);
+        console.log("Attachment: ", attachmentCost);
+        console.log("Glass: ", glassCost);
+      });
+    }
+    console.log("Finished hunting cost ...");
   }
 
-  public async getStill() {
-    const stillTableHeadElement = document.querySelectorAll(
-      ".Table table#W0054GridContainerTbl thead>tr>th>span"
+  public async getStill(): Promise<StillCostHunted[]> {
+    await this.page.waitForSelector(
+      "#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2"
     );
+    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2");
+    await this.page.waitForSelector("#W0054GridContainerTbl");
 
-    const stillTableHeadNames = [] as string[];
+    const stillCostHunted = await this.page.evaluate(async () => {
+      // eslint-disable-next-line no-debugger
+      // debugger;
+      const stillTableHeadElement = document.querySelectorAll(
+        ".Table table#W0054GridContainerTbl thead>tr>th>span"
+      );
 
-    stillTableHeadElement.forEach((spanElement) => {
-      if ((spanElement as HTMLElement).innerText !== "") {
-        stillTableHeadNames.push(
-          (spanElement as HTMLElement).innerText.replace(/[^A-Z0-9]+/gi, "")
-        );
-      }
-    });
+      const stillTableHeadNames = [] as string[];
 
-    const stillRowsElement = document.querySelectorAll(
-      ".Table table#W0054GridContainerTbl tbody>tr.GridWithTotalizer"
-    );
-
-    const stillData = [] as any[];
-
-    stillRowsElement.forEach((rowElement) => {
-      const stillValues = [] as any[];
-      const stillSpanElement = rowElement.querySelectorAll("td>p>span");
-
-      stillSpanElement.forEach((element) => {
-        stillValues.push((element as HTMLElement).innerText);
+      stillTableHeadElement.forEach((spanElement) => {
+        if ((spanElement as HTMLElement).innerText !== "") {
+          stillTableHeadNames.push(
+            (spanElement as HTMLElement).innerText.replace(/[^A-Z0-9]+/gi, "")
+          );
+        }
       });
 
-      stillData.push(stillValues);
-    });
+      const stillRowsElement = document.querySelectorAll(
+        ".Table table#W0054GridContainerTbl tbody>tr.GridWithTotalizer"
+      );
 
-    const stillRepository = [] as any;
+      const stillData = [] as any[];
 
-    stillData.forEach((stillArray) => {
-      let stillNormalizedData = {};
+      stillRowsElement.forEach((rowElement) => {
+        const stillValues = [] as any[];
+        const stillSpanElement = rowElement.querySelectorAll("td>p>span");
 
-      stillArray.forEach((element: HTMLElement, index: number) => {
-        const stillNormalizedValue = {
-          [stillTableHeadNames[index]]: element,
-        };
+        stillSpanElement.forEach((element) => {
+          stillValues.push((element as HTMLElement).innerText);
+        });
 
-        stillNormalizedData = {
-          ...stillNormalizedData,
-          ...stillNormalizedValue,
-        };
+        stillData.push(stillValues);
       });
 
-      stillRepository.push(stillNormalizedData);
+      const stillRepository = [] as StillCostHunted[];
+
+      stillData.forEach((stillArray) => {
+        let stillNormalizedData = {} as StillCostHunted;
+
+        stillArray.forEach((element: HTMLElement, index: number) => {
+          const stillNormalizedValue = {
+            [stillTableHeadNames[index]]: element,
+          };
+
+          stillNormalizedData = {
+            ...stillNormalizedData,
+            ...stillNormalizedValue,
+          };
+        });
+
+        stillRepository.push(stillNormalizedData);
+      });
+
+      return stillRepository;
     });
+
+    console.log("Finished hunting still ...");
+
+    return stillCostHunted;
 
     /*
     [

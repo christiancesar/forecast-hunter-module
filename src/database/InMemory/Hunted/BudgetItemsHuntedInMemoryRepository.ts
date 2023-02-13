@@ -1,4 +1,4 @@
-import { BudgetItemHuntedDTO } from "dtos/BudgetItemsHunterDTO";
+import { BudgetItemHuntedDTO } from "dtos/BudgetItemHuntedDTO";
 
 export class BudgetItemsHuntedInMemoryRepository {
   private budgetItems: BudgetItemHuntedDTO[] = [];

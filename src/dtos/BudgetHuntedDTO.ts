@@ -1,4 +1,6 @@
-export type BudgetHunterDTO = {
+import { BudgetItemHuntedDTO } from "./BudgetItemHuntedDTO";
+
+export type BudgetHuntedDTO = {
   NroOrc: string;
   Situao: string;
   Licena: string;
@@ -66,4 +68,10 @@ export type BudgetHunterDTO = {
   ComoConheceu: string;
   Recusado: string;
   link: string;
+  vendaitens: string;
+  valorbruto: string;
+  valordesconto: string;
+  valorliquido: string;
+  cost: { still?: any[]; glass?: any[]; attachment?: any[] };
+  itens: BudgetItemHuntedDTO[];
 };
