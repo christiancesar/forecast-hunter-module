@@ -249,7 +249,7 @@ export class BudgetHunter {
 
     const budgetsHunter = await this.budgetsHuntedInMemoryRepository.findAll();
 
-    const budgetItemsHuntedRepository = [] as BudgetItemHuntedDTO[];
+    // const budgetItemsHuntedRepository = [] as BudgetItemHuntedDTO[];
 
     for (let index = 0; index < budgetsHunter.length; index++) {
       await this.page.goto(budgetsHunter[index].link, {
@@ -340,7 +340,7 @@ export class BudgetHunter {
           console.log(err);
         });
 
-      await this.page.click(".panel.panel-green>a");
+      await this.page.click(".panel.panel-green>a", { delay: 2000 });
 
       console.log("\n[BUDGET COST]");
 
