@@ -1,4 +1,4 @@
-import { BudgetHunter } from "./BudgetHunter";
+import { BudgetHunter } from "./services/BudgetHunter";
 import "dotenv/config";
 
 (async () => {
@@ -12,5 +12,6 @@ import "dotenv/config";
   await budgetHunter.load();
   await budgetHunter.getBudgets();
   await budgetHunter.getBudgetItems();
+  await budgetHunter.getStill();
   // await budgetHunter.getCost(); //Dont work
 })();

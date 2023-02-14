@@ -1,10 +1,10 @@
-import { BudgetItemsHuntedInMemoryRepository } from "./database/InMemory/Hunted/BudgetItemsHuntedInMemoryRepository";
-import { BudgetsHuntedInMemoryRepository } from "./database/InMemory/Hunted/BudgetsHuntedInMemoryRepository";
+import { BudgetItemsHuntedInMemoryRepository } from "@shared/database/inMemory/hunted/BudgetItemsHuntedInMemoryRepository";
+import { BudgetsHuntedInMemoryRepository } from "@shared/database/inMemory/hunted/BudgetsHuntedInMemoryRepository";
 import "dotenv/config";
-import { BudgetItemHuntedDTO } from "./dtos/BudgetItemHuntedDTO";
+import { BudgetItemHuntedDTO } from "../dtos/BudgetItemHuntedDTO";
 import puppeteer, { Browser, Page } from "puppeteer";
-import { BudgetHuntedDTO } from "./dtos/BudgetHuntedDTO";
-import { createJsonFile } from "./shared/helpers/createJsonFile";
+import { BudgetHuntedDTO } from "../dtos/BudgetHuntedDTO";
+import { createJsonFile } from "../shared/helpers/createJsonFile";
 
 type BudgetHunterParams = {
   user: string | undefined;
@@ -64,7 +64,12 @@ export class BudgetHunter {
 
   public async load(): Promise<void> {
     console.log("\n[SETTINGS LOADING]");
-    this.browser = await puppeteer.launch({ headless: false, devtools: true });
+    this.browser = await puppeteer.launch({
+      headless: false,
+      devtools: true,
+      timeout: 80000,
+      dumpio: true,
+    });
     this.page = await this.browser.newPage();
   }
 
@@ -238,21 +243,23 @@ export class BudgetHunter {
 
     console.log("Start saving budgets in database...");
 
-    await this.budgetsHuntedInMemoryRepository.saveAll(budgetsHunted);
+    const budgets = await this.budgetsHuntedInMemoryRepository.saveAll(
+      budgetsHunted
+    );
 
-    console.log("Finished saving budgets in database...");
+    console.log(`Saving ${budgets.length} budgets in database...`);
   }
 
   public async getBudgetItems(): Promise<void> {
     console.log("\n[BUDGET ITEMS]");
     console.log("Start hunting budget items...");
 
-    const budgetsHunter = await this.budgetsHuntedInMemoryRepository.findAll();
+    let budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
 
     // const budgetItemsHuntedRepository = [] as BudgetItemHuntedDTO[];
 
-    for (let index = 0; index < budgetsHunter.length; index++) {
-      await this.page.goto(budgetsHunter[index].link, {
+    for (let index = 0; index < budgetsHunted.length; index++) {
+      await this.page.goto(budgetsHunted[index].link, {
         waitUntil: "networkidle0",
       });
 
@@ -340,49 +347,33 @@ export class BudgetHunter {
           console.log(err);
         });
 
-      await this.page.click(".panel.panel-green>a", { delay: 2000 });
-
-      console.log("\n[BUDGET COST]");
-
-      console.log("Start hunting still costs ...");
-      const stillCostHunted = await this.getStill();
-
-      // console.log("Start hunting attachment costs ...");
-      // const attachmentCostHunted = await this.getAttachment();
-
-      // console.log("Start hunting glass costs ...");
-      // const glassConstHutend = await this.getGlass();
-
-      budgetsHunter[index] = {
-        ...budgetsHunter[index],
+      budgetsHunted[index] = {
+        ...budgetsHunted[index],
         ...values!.cardAmountRepository,
-        cost: {
-          still: stillCostHunted,
-        },
         itens: values!.budgetItemsHunted,
       };
 
-      await this.budgetsHuntedInMemoryRepository.update(budgetsHunter[index]);
+      await this.budgetsHuntedInMemoryRepository.update(budgetsHunted[index]);
 
       console.log(
-        `Updated budget ${budgetsHunter[index].NroOrc} in database ✔`
+        `Updated budget ${budgetsHunted[index].NroOrc} in database ✔`
       );
     }
 
-    const budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
+    budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
 
     createJsonFile("budgets", budgetsHunted);
   }
 
   public async getCost() {
-    const budgetsHunter = await this.budgetsHuntedInMemoryRepository.findAll();
+    const budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
 
     console.log("Start hunting cost ...");
 
     const budgetCost = [] as any[];
 
-    for (let index = 0; index < budgetsHunter.length; index++) {
-      await this.page.goto(budgetsHunter[index].link, {
+    for (let index = 0; index < budgetsHunted.length; index++) {
+      await this.page.goto(budgetsHunted[index].link, {
         waitUntil: "networkidle0",
       });
 
@@ -455,845 +446,120 @@ export class BudgetHunter {
     console.log("Finished hunting cost ...");
   }
 
-  public async getStill(): Promise<StillCostHunted[]> {
-    await this.page.waitForSelector(
-      "#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2"
-    );
-    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2");
-    await this.page.waitForSelector("#W0054GridContainerTbl");
+  public async getStill() {
+    console.log("\n[BUDGET STILL COST]");
 
-    const stillCostHunted = await this.page.evaluate(async () => {
-      // eslint-disable-next-line no-debugger
-      // debugger;
-      const stillTableHeadElement = document.querySelectorAll(
-        ".Table table#W0054GridContainerTbl thead>tr>th>span"
-      );
+    console.log("Start hunting budget still cost...");
 
-      const stillTableHeadNames = [] as string[];
+    let budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
 
-      stillTableHeadElement.forEach((spanElement) => {
-        if ((spanElement as HTMLElement).innerText !== "") {
-          stillTableHeadNames.push(
-            (spanElement as HTMLElement).innerText.replace(/[^A-Z0-9]+/gi, "")
-          );
+    for (let index = 0; index < 1; index++) {
+      await this.page.goto(budgetsHunted[index].link, {
+        waitUntil: "networkidle0",
+      });
+
+      await this.page.waitForSelector("#W0085W0002GridContainerTbl");
+
+      const linkElementExist = await this.page.evaluate(async () => {
+        const linkElement = document.querySelector(
+          ".panel.panel-green>a"
+        ) as HTMLElement;
+
+        if (linkElement) {
+          return true;
         }
       });
 
-      const stillRowsElement = document.querySelectorAll(
-        ".Table table#W0054GridContainerTbl tbody>tr.GridWithTotalizer"
-      );
+      if (linkElementExist) {
+        await this.page.click(".panel.panel-green>a", { delay: 2000 });
 
-      const stillData = [] as any[];
+        await this.page.waitForSelector(
+          "#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2"
+        );
 
-      stillRowsElement.forEach((rowElement) => {
-        const stillValues = [] as any[];
-        const stillSpanElement = rowElement.querySelectorAll("td>p>span");
+        await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2");
 
-        stillSpanElement.forEach((element) => {
-          stillValues.push((element as HTMLElement).innerText);
+        // await this.page.waitForSelector("#W0054GridContainerTbl");
+
+        const stillCostHunted = await this.page.evaluate(async () => {
+          // eslint-disable-next-line no-debugger
+          // debugger;
+          const stillTableHeadElement = document.querySelectorAll(
+            ".Table table#W0054GridContainerTbl thead>tr>th>span"
+          );
+
+          const stillTableHeadNames = [] as string[];
+
+          stillTableHeadElement.forEach((spanElement) => {
+            if ((spanElement as HTMLElement).innerText !== "") {
+              stillTableHeadNames.push(
+                (spanElement as HTMLElement).innerText.replace(
+                  /[^A-Z0-9]+/gi,
+                  ""
+                )
+              );
+            }
+          });
+
+          const stillRowsElement = document.querySelectorAll(
+            ".Table table#W0054GridContainerTbl tbody>tr.GridWithTotalizer"
+          );
+
+          const stillData = [] as any[];
+
+          stillRowsElement.forEach((rowElement) => {
+            const stillValues = [] as any[];
+            const stillSpanElement = rowElement.querySelectorAll("td>p>span");
+
+            stillSpanElement.forEach((element) => {
+              stillValues.push((element as HTMLElement).innerText);
+            });
+
+            stillData.push(stillValues);
+          });
+
+          const stillRepository = [] as StillCostHunted[];
+          //eslint-disable-next-line no-debugger
+          debugger;
+          stillData.forEach((stillArray) => {
+            let stillNormalizedData = {} as StillCostHunted;
+
+            stillArray.forEach((element: HTMLElement, index: number) => {
+              const stillNormalizedValue = {
+                [stillTableHeadNames[index]]: element,
+              };
+
+              stillNormalizedData = {
+                ...stillNormalizedData,
+                ...stillNormalizedValue,
+              };
+            });
+
+            stillRepository.push(stillNormalizedData);
+          });
+
+          return stillRepository;
         });
 
-        stillData.push(stillValues);
-      });
+        console.log("Finished hunting still ...");
 
-      const stillRepository = [] as StillCostHunted[];
+        const budgetsHuntedUpdated = {
+          ...budgetsHunted[index],
+          cost: {
+            still: stillCostHunted,
+          },
+        };
 
-      stillData.forEach((stillArray) => {
-        let stillNormalizedData = {} as StillCostHunted;
+        await this.budgetsHuntedInMemoryRepository.update(budgetsHuntedUpdated);
 
-        stillArray.forEach((element: HTMLElement, index: number) => {
-          const stillNormalizedValue = {
-            [stillTableHeadNames[index]]: element,
-          };
-
-          stillNormalizedData = {
-            ...stillNormalizedData,
-            ...stillNormalizedValue,
-          };
-        });
-
-        stillRepository.push(stillNormalizedData);
-      });
-
-      return stillRepository;
-    });
-
-    console.log("Finished hunting still ...");
-
-    return stillCostHunted;
-
-    /*
-    [
-      {
-        "Id": "62",
-        "CDIGO": "SU271",
-        "SEUCDIGO": "",
-        "NOME": "TRILHO PORTA",
-        "COR": "BRANCO",
-        "PESO": "2,588PESO",
-        "Peso": "2,588",
-        "ML": "7,438",
-        "CUSTOKGML": "42,01",
-        "VLRCUSTO": "108,71",
-        "VLRVENDA": "206,56",
-        "DIFERENA": "97,85",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "4,552",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "1,584",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "126,41",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "2",
-        "ID": "23865699",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "32",
-        "CDIGO": "SU245",
-        "SEUCDIGO": "",
-        "NOME": "MONTANTE LATERAL DA FOLHA",
-        "COR": "BRANCO",
-        "PESO": "3,242PESO",
-        "Peso": "3,242",
-        "ML": "4,712",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "136,16",
-        "VLRVENDA": "258,70",
-        "DIFERENA": "122,54",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "1,278",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "0,879",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "70,17",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "1",
-        "ID": "23865685",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "33",
-        "CDIGO": "SU280",
-        "SEUCDIGO": "",
-        "NOME": "MONTANTE LATERAL DA FOLHA | REFORÇO ABA",
-        "COR": "BRANCO",
-        "PESO": "4,740PESO",
-        "Peso": "4,740",
-        "ML": "4,712",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "199,09",
-        "VLRVENDA": "378,27",
-        "DIFERENA": "179,18",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "0,000",
-        "MLSUCATA": "1,278",
-        "PESOSOBRA": "0,000",
-        "PESOSUCATA": "1,286",
-        "VLRSOBRA": "0,00",
-        "VLRSUCATA": "102,60",
-        "QTBARRAS": "1",
-        "ID": "23865688",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "34",
-        "CDIGO": "SU291",
-        "SEUCDIGO": "",
-        "NOME": "MATA JUNTA CENTRAL",
-        "COR": "BRANCO",
-        "PESO": "21,123PESO",
-        "Peso": "21,123",
-        "ML": "86,212",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "887,13",
-        "VLRVENDA": "1.685,54",
-        "DIFERENA": "798,41",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "15,518",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "3,802",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "303,39",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "17",
-        "ID": "23865689",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "35",
-        "CDIGO": "SU242",
-        "SEUCDIGO": "",
-        "NOME": "MONTANTE MÃO DE AMIGO EXTERNO",
-        "COR": "BRANCO",
-        "PESO": "3,501PESO",
-        "Peso": "3,501",
-        "ML": "4,712",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "147,04",
-        "VLRVENDA": "279,38",
-        "DIFERENA": "132,34",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "1,278",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "0,950",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "75,77",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "1",
-        "ID": "23865697",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "36",
-        "CDIGO": "SU243",
-        "SEUCDIGO": "",
-        "NOME": "MONTANTE MÃO DE AMIGO INTERNO",
-        "COR": "BRANCO",
-        "PESO": "3,355PESO",
-        "Peso": "3,355",
-        "ML": "4,712",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "140,91",
-        "VLRVENDA": "267,72",
-        "DIFERENA": "126,81",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "1,278",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "0,910",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "72,61",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "1",
-        "ID": "23865698",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "39",
-        "CDIGO": "SU250",
-        "SEUCDIGO": "",
-        "NOME": "MONTANTE CENTRAL FOLHA / CORRER",
-        "COR": "BRANCO",
-        "PESO": "38,540PESO",
-        "Peso": "38,540",
-        "ML": "52,364",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "1.618,68",
-        "VLRVENDA": "3.075,49",
-        "DIFERENA": "1.456,81",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "7,466",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "5,495",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "438,50",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "10",
-        "ID": "23865710",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "44",
-        "CDIGO": "SU004",
-        "SEUCDIGO": "",
-        "NOME": "MARCO BANDEIRA E PEITORIL / CORRER 2",
-        "COR": "BRANCO",
-        "PESO": "6,862PESO",
-        "Peso": "6,862",
-        "ML": "13,614",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "288,18",
-        "VLRVENDA": "547,55",
-        "DIFERENA": "259,37",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "4,356",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "2,195",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "175,19",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "3",
-        "ID": "23865622",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "46",
-        "CDIGO": "SU079",
-        "SEUCDIGO": "",
-        "NOME": "MARCO",
-        "COR": "BRANCO",
-        "PESO": "4,204PESO",
-        "Peso": "4,204",
-        "ML": "12,328",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "176,57",
-        "VLRVENDA": "335,47",
-        "DIFERENA": "158,90",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "5,597",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "1,909",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "152,30",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "3",
-        "ID": "23865648",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "49",
-        "CDIGO": "SU111",
-        "SEUCDIGO": "",
-        "NOME": "MONTANTE FOLHA DE GIRO",
-        "COR": "BRANCO",
-        "PESO": "12,783PESO",
-        "Peso": "12,783",
-        "ML": "19,974",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "536,90",
-        "VLRVENDA": "1.020,11",
-        "DIFERENA": "483,21",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "3,885",
-        "MLSUCATA": "0,081",
-        "PESOSOBRA": "2,486",
-        "PESOSUCATA": "0,052",
-        "VLRSOBRA": "198,41",
-        "VLRSUCATA": "4,14",
-        "QTBARRAS": "4",
-        "ID": "23865667",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "51",
-        "CDIGO": "SU081",
-        "SEUCDIGO": "",
-        "NOME": "MONTANTE / FOLHA",
-        "COR": "BRANCO",
-        "PESO": "3,402PESO",
-        "Peso": "3,402",
-        "ML": "8,256",
-        "CUSTOKGML": "41,99",
-        "VLRCUSTO": "142,86",
-        "VLRVENDA": "271,44",
-        "DIFERENA": "128,58",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "3,684",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "1,518",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "121,12",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "2",
-        "ID": "23865650",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "52",
-        "CDIGO": "SU082",
-        "SEUCDIGO": "",
-        "NOME": "TRAVESSA / FOLHA",
-        "COR": "BRANCO",
-        "PESO": "1,359PESO",
-        "Peso": "1,359",
-        "ML": "3,556",
-        "CUSTOKGML": "41,98",
-        "VLRCUSTO": "57,05",
-        "VLRVENDA": "108,40",
-        "DIFERENA": "51,35",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "2,424",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "0,926",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "73,89",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "1",
-        "ID": "23865651",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "54",
-        "CDIGO": "SU083",
-        "SEUCDIGO": "",
-        "NOME": "PINGADEIRA DO MARCO MAXIM-AR",
-        "COR": "BRANCO",
-        "PESO": "0,510PESO",
-        "Peso": "0,510",
-        "ML": "3,780",
-        "CUSTOKGML": "42,02",
-        "VLRCUSTO": "21,43",
-        "VLRVENDA": "40,72",
-        "DIFERENA": "19,29",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "2,200",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "0,297",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "23,70",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "1",
-        "ID": "24464359",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "58",
-        "CDIGO": "ME013",
-        "SEUCDIGO": "",
-        "NOME": "REMATE DE PISO",
-        "COR": "BRANCO",
-        "PESO": "1,017PESO",
-        "Peso": "1,017",
-        "ML": "3,794",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "42,71",
-        "VLRVENDA": "81,14",
-        "DIFERENA": "38,43",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "2,201",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "0,590",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "47,07",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "1",
-        "ID": "23865601",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "60",
-        "CDIGO": "SU225",
-        "SEUCDIGO": "",
-        "NOME": "TRAVESSA INFERIOR DA FOLHA",
-        "COR": "BRANCO",
-        "PESO": "6,749PESO",
-        "Peso": "6,749",
-        "ML": "6,824",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "283,46",
-        "VLRVENDA": "538,57",
-        "DIFERENA": "255,11",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "5,136",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "5,080",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "405,34",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "2",
-        "ID": "23865681",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "30",
-        "CDIGO": "SU102",
-        "SEUCDIGO": "",
-        "NOME": "BAGUETE",
-        "COR": "BRANCO",
-        "PESO": "34,149PESO",
-        "Peso": "34,149",
-        "ML": "307,662",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "1.434,32",
-        "VLRVENDA": "2.725,20",
-        "DIFERENA": "1.290,88",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "8,758",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "0,972",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "77,58",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "53",
-        "ID": "23865662",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "29",
-        "CDIGO": "SU053",
-        "SEUCDIGO": "",
-        "NOME": "TRAVESSA DA FOLHA",
-        "COR": "BRANCO",
-        "PESO": "29,763PESO",
-        "Peso": "29,763",
-        "ML": "58,704",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "1.250,04",
-        "VLRVENDA": "2.375,08",
-        "DIFERENA": "1.125,04",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "6,616",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "3,354",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "267,67",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "11",
-        "ID": "23865644",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "24",
-        "CDIGO": "SU041",
-        "SEUCDIGO": "",
-        "NOME": "MONTANTE MÃO DE AMIGO",
-        "COR": "BRANCO",
-        "PESO": "26,549PESO",
-        "Peso": "26,549",
-        "ML": "52,364",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "1.115,04",
-        "VLRVENDA": "2.118,58",
-        "DIFERENA": "1.003,54",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "7,466",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "3,785",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "302,06",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "10",
-        "ID": "23865637",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "23",
-        "CDIGO": "SU040",
-        "SEUCDIGO": "",
-        "NOME": "MONTANTE MAO-DE-AMIGO INTERNO",
-        "COR": "BRANCO",
-        "PESO": "25,135PESO",
-        "Peso": "25,135",
-        "ML": "52,364",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "1.055,65",
-        "VLRVENDA": "2.005,75",
-        "DIFERENA": "950,10",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "7,466",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "3,584",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "285,98",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "10",
-        "ID": "23865636",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "22",
-        "CDIGO": "SU039",
-        "SEUCDIGO": "",
-        "NOME": "MONTANTE DE FOLHA",
-        "COR": "BRANCO",
-        "PESO": "27,229PESO",
-        "Peso": "27,229",
-        "ML": "52,364",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "1.143,63",
-        "VLRVENDA": "2.172,90",
-        "DIFERENA": "1.029,27",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "7,466",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "3,882",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "309,81",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "10",
-        "ID": "23865635",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "21",
-        "CDIGO": "SU007",
-        "SEUCDIGO": "",
-        "NOME": "MARCO LATERAL / CORRER 2",
-        "COR": "BRANCO",
-        "PESO": "24,995PESO",
-        "Peso": "24,995",
-        "ML": "65,432",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "1.049,79",
-        "VLRVENDA": "1.994,61",
-        "DIFERENA": "944,82",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "6,358",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "2,429",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "193,81",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "12",
-        "ID": "23865625",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "19",
-        "CDIGO": "SU002",
-        "SEUCDIGO": "",
-        "NOME": "MARCO INFERIOR 2 PLANOS",
-        "COR": "BRANCO",
-        "PESO": "22,818PESO",
-        "Peso": "22,818",
-        "ML": "32,973",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "958,33",
-        "VLRVENDA": "1.820,83",
-        "DIFERENA": "862,50",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "2,942",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "2,036",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "162,46",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "6",
-        "ID": "23865620",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "18",
-        "CDIGO": "SU001",
-        "SEUCDIGO": "",
-        "NOME": "MARCO SUPERIOR / CORRER 2",
-        "COR": "BRANCO",
-        "PESO": "27,960PESO",
-        "Peso": "27,960",
-        "ML": "36,692",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "1.174,28",
-        "VLRVENDA": "2.231,15",
-        "DIFERENA": "1.056,87",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "5,218",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "3,976",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "317,29",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "7",
-        "ID": "23865619",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "17",
-        "CDIGO": "MP347",
-        "SEUCDIGO": "",
-        "NOME": "ARREMATE / FACE INTERNA",
-        "COR": "BRANCO",
-        "PESO": "33,707PESO",
-        "Peso": "33,707",
-        "ML": "166,862",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "1.415,66",
-        "VLRVENDA": "2.689,74",
-        "DIFERENA": "1.274,08",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "6,643",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "1,342",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "107,08",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "29",
-        "ID": "23865618",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "2",
-        "CDIGO": "CL011",
-        "SEUCDIGO": "",
-        "NOME": "CUNHA",
-        "COR": "NATURAL",
-        "PESO": "31,425PESO",
-        "Peso": "31,425",
-        "ML": "98,512",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "1.319,85",
-        "VLRVENDA": "2.507,73",
-        "DIFERENA": "1.187,88",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "1,608",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "0,513",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "40,93",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "38",
-        "ID": "23865589",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "15",
-        "CDIGO": "CM200",
-        "SEUCDIGO": "",
-        "NOME": "CONTRAMARCO",
-        "COR": "NATURAL",
-        "PESO": "36,255PESO",
-        "Peso": "36,255",
-        "ML": "164,806",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "1.522,82",
-        "VLRVENDA": "2.893,34",
-        "DIFERENA": "1.370,52",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "8,699",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "1,914",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "152,72",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "29",
-        "ID": "23865595",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "1",
-        "CDIGO": "CL006",
-        "SEUCDIGO": "CL006",
-        "NOME": "CONEXÃO CANTONEIRA",
-        "COR": "NATURAL",
-        "PESO": "54,773PESO",
-        "Peso": "54,773",
-        "ML": "49,256",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "2.300,45",
-        "VLRVENDA": "4.370,88",
-        "DIFERENA": "2.070,43",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "0,804",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "0,894",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "71,35",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "19",
-        "ID": "23865588",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "12",
-        "CDIGO": "FC-227",
-        "SEUCDIGO": "FC-227",
-        "NOME": "PINGADEIRA QUADRO MOVEL",
-        "COR": "PRETO",
-        "PESO": "137,374PESO",
-        "Peso": "137,374",
-        "ML": "216,678",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "5.769,71",
-        "VLRVENDA": "10.962,44",
-        "DIFERENA": "5.192,73",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "10,077",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "6,389",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "509,83",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "38",
-        "ID": "24524508",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "11",
-        "CDIGO": "FC-261",
-        "SEUCDIGO": "",
-        "NOME": "FOLHA STRUTURAL GLAZING",
-        "COR": "PRETO",
-        "PESO": "560,186PESO",
-        "Peso": "560,186",
-        "ML": "1009,344",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "23.527,82",
-        "VLRVENDA": "44.702,84",
-        "DIFERENA": "21.175,02",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "89,976",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "49,937",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "3.984,95",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "184",
-        "ID": "23866728",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "10",
-        "CDIGO": "FC-243",
-        "SEUCDIGO": "",
-        "NOME": "COLUNA LATERAL",
-        "COR": "PRETO",
-        "PESO": "53,517PESO",
-        "Peso": "53,517",
-        "ML": "48,300",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "2.247,69",
-        "VLRVENDA": "4.270,60",
-        "DIFERENA": "2.022,91",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "5,660",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "6,271",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "500,45",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "9",
-        "ID": "23866727",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "6",
-        "CDIGO": "FC-228",
-        "SEUCDIGO": "",
-        "NOME": "FOLHA COM ABA",
-        "COR": "PRETO",
-        "PESO": "159,710PESO",
-        "Peso": "159,710",
-        "ML": "268,872",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "6.707,82",
-        "VLRVENDA": "12.744,85",
-        "DIFERENA": "6.037,03",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "5,568",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "3,307",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "263,93",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "46",
-        "ID": "23866723",
-        "VLRCUSTOTRAT": "0,00"
-      },
-      {
-        "Id": "4",
-        "CDIGO": "FC-202",
-        "SEUCDIGO": "",
-        "NOME": "COLUNA",
-        "COR": "PRETO",
-        "PESO": "636,713PESO",
-        "Peso": "636,713",
-        "ML": "349,650",
-        "CUSTOKGML": "42,00",
-        "VLRCUSTO": "26.741,93",
-        "VLRVENDA": "50.809,68",
-        "DIFERENA": "24.067,75",
-        "VLRTRAT": "0,00",
-        "MLSOBRA": "4,055",
-        "MLSUCATA": "0,000",
-        "PESOSOBRA": "7,384",
-        "PESOSUCATA": "0,000",
-        "VLRSOBRA": "589,26",
-        "VLRSUCATA": "0,00",
-        "QTBARRAS": "59",
-        "ID": "23866719",
-        "VLRCUSTOTRAT": "0,00"
+        console.log(
+          `Updated budget ${budgetsHunted[index].NroOrc} in database ✔`
+        );
       }
-    ]
-    */
+    }
+
+    budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
+    createJsonFile("budgets", budgetsHunted);
   }
 
   public async getAttachment() {
