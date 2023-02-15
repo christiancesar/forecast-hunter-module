@@ -68,7 +68,7 @@ export class BudgetHunter {
       headless: false,
       devtools: true,
       timeout: 80000,
-      dumpio: true,
+      // dumpio: true,
     });
     this.page = await this.browser.newPage();
   }
@@ -453,7 +453,7 @@ export class BudgetHunter {
 
     let budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
 
-    for (let index = 0; index < 1; index++) {
+    for (let index = 0; index < budgetsHunted.length; index++) {
       await this.page.goto(budgetsHunted[index].link, {
         waitUntil: "networkidle0",
       });
@@ -479,7 +479,7 @@ export class BudgetHunter {
 
         await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2");
 
-        // await this.page.waitForSelector("#W0054GridContainerTbl");
+        await this.page.waitForSelector("#W0054GridContainerTbl");
 
         const stillCostHunted = await this.page.evaluate(async () => {
           // eslint-disable-next-line no-debugger
@@ -520,7 +520,7 @@ export class BudgetHunter {
 
           const stillRepository = [] as StillCostHunted[];
           //eslint-disable-next-line no-debugger
-          debugger;
+          // debugger;
           stillData.forEach((stillArray) => {
             let stillNormalizedData = {} as StillCostHunted;
 
