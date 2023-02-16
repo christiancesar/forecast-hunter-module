@@ -370,7 +370,7 @@ export class BudgetHunter {
 
     const budgetCost = [] as any[];
 
-    for (let index = 0; index < budgetsHunted.length; index++) {
+    for (let index = 0; index < 10; index++) {
       await this.page.goto(budgetsHunted[index].link, {
         waitUntil: "networkidle0",
       });
@@ -385,7 +385,7 @@ export class BudgetHunter {
         //Pegando valores de "Custo"
 
         // eslint-disable-next-line no-debugger
-        debugger;
+        // debugger;
 
         const costs = document.querySelectorAll(
           "#W0046TBLFINANCEIROR_0002 .row span"
@@ -451,7 +451,7 @@ export class BudgetHunter {
 
     let budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
 
-    for (let index = 0; index < budgetsHunted.length; index++) {
+    for (let index = 0; index < 10; index++) {
       await this.page.goto(budgetsHunted[index].link, {
         waitUntil: "networkidle0",
       });
@@ -481,7 +481,7 @@ export class BudgetHunter {
 
         const stillCostHunted = await this.page.evaluate(async () => {
           // eslint-disable-next-line no-debugger
-          // debugger;
+          debugger;
           const stillTableHeadElement = document.querySelectorAll(
             ".Table table#W0054GridContainerTbl thead>tr>th>span"
           );
@@ -505,16 +505,28 @@ export class BudgetHunter {
 
           const stillData = [] as any[];
 
-          stillRowsElement.forEach((rowElement) => {
-            const stillValues = [] as any[];
-            const stillSpanElement = rowElement.querySelectorAll("td>p>span");
+          const buttonElementText = (
+            document.querySelector(
+              ".btn.btn-primary.dropdown-toggle"
+            ) as HTMLElement
+          ).innerText.match(/(\d+)(?!.*\d)/g);
 
-            stillSpanElement.forEach((element) => {
-              stillValues.push((element as HTMLElement).innerText);
+          const paginationLenght = buttonElementText
+            ? Number(buttonElementText[0])
+            : 1;
+
+          for (let index = 0; index < paginationLenght; index++) {
+            stillRowsElement.forEach((rowElement) => {
+              const stillValues = [] as any[];
+              const stillSpanElement = rowElement.querySelectorAll("td>p>span");
+
+              stillSpanElement.forEach((element) => {
+                stillValues.push((element as HTMLElement).innerText);
+              });
+
+              stillData.push(stillValues);
             });
-
-            stillData.push(stillValues);
-          });
+          }
 
           const stillRepository = [] as StillCostHunted[];
           //eslint-disable-next-line no-debugger
