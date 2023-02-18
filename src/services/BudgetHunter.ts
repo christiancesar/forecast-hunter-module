@@ -13,6 +13,40 @@ type BudgetHunterParams = {
   url: string;
 };
 
+type GlassCostHunted = {
+  Licena: string;
+  NroOramento: string;
+  OrcamentoValorVidroId: string;
+  CODIGO: string;
+  COR: string;
+  QTDE: string;
+  M2: string;
+  M2ARR: string;
+  PESO: string;
+  VLRUNIT: string;
+  CUSTO: string;
+  VENDA: string;
+  DIF: string;
+  AC: string;
+};
+
+type AttachmentCostHunted = {
+  ID: string;
+  CDIGO: string;
+  SEUCDIGO: string;
+  NOME: string;
+  UN: string;
+  COR: string;
+  QTDE: string;
+  QTDEMB: string;
+  VLRUNIT: string;
+  VLRCUSTO: string;
+  VVENDA: string;
+  DIF: string;
+  CUSTOEMB: string;
+  VENDAEMB: string;
+};
+
 type StillCostHunted = {
   Id: string;
   CDIGO: string;
@@ -76,7 +110,7 @@ export class BudgetHunter {
     console.log("Starting to get budgets...");
     // await page.waitForNavigation();
     await this.page.goto(this.url, {
-      waitUntil: "networkidle2",
+      waitUntil: "domcontentloaded",
     });
 
     await this.page.setJavaScriptEnabled(false);
@@ -256,207 +290,91 @@ export class BudgetHunter {
 
     // const budgetItemsHuntedRepository = [] as BudgetItemHuntedDTO[];
 
-    for (let index = 0; index < 1; index++) {
+    for (let index = 0; index < budgetsHunted.length; index++) {
       await this.page.goto(budgetsHunted[index].link, {
         waitUntil: "networkidle0",
       });
 
       await this.page.waitForSelector("#W0085W0002GridContainerTbl");
 
-      const values = await this.page
-        .evaluate(async () => {
-          // eslint-disable-next-line no-debugger
-          // debugger;
+      const values = await this.page.evaluate(async () => {
+        const budgetItemsTableHeadElement = document.querySelectorAll(
+          ".Table table#W0085W0002GridContainerTbl thead>tr>th"
+        );
 
-          const budgetItemsTableHeadElement = document.querySelectorAll(
-            ".Table table#W0085W0002GridContainerTbl thead>tr>th"
-          );
+        const budgetItemsTableHeadNames = [] as string[];
 
-          const budgetItemsTableHeadNames = [] as string[];
+        budgetItemsTableHeadElement.forEach((spanElement, index) => {
+          let value;
 
-          budgetItemsTableHeadElement.forEach((spanElement, index) => {
-            let value;
+          if ((spanElement as HTMLElement).innerText.trim() === "") {
+            value = "void";
+          } else {
+            value = (spanElement as HTMLElement).innerText.replace(
+              /[^A-Z0-9]+/gi,
+              ""
+            );
+          }
 
-            if ((spanElement as HTMLElement).innerText.trim() === "") {
-              value = "void";
-            } else {
-              value = (spanElement as HTMLElement).innerText.replace(
-                /[^A-Z0-9]+/gi,
-                ""
-              );
-            }
+          budgetItemsTableHeadNames.push(`${value}${index}`);
+        });
 
-            budgetItemsTableHeadNames.push(`${value}${index}`);
-          });
+        const budgetItems = (
+          document.querySelector(
+            "#W0085W0002GridContainerDataV"
+          ) as HTMLInputElement
+        ).value;
 
-          const budgetItems = (
-            document.querySelector(
-              "#W0085W0002GridContainerDataV"
-            ) as HTMLInputElement
-          ).value;
+        const budgetItemsData = JSON.parse(budgetItems);
 
-          const budgetItemsData = JSON.parse(budgetItems);
+        const budgetItemsHunted: BudgetItemHuntedDTO[] = [];
 
-          const budgetItemsHunted: BudgetItemHuntedDTO[] = [];
+        budgetItemsData.forEach((budgetItemsArray: BudgetItemHuntedDTO[]) => {
+          let budgetItemsNormalizedData = {} as BudgetItemHuntedDTO;
 
-          budgetItemsData.forEach((budgetItemsArray: BudgetItemHuntedDTO[]) => {
-            let budgetItemsNormalizedData = {} as BudgetItemHuntedDTO;
+          budgetItemsArray.forEach((element, index) => {
+            const budgetItemsNormalizedValue = {
+              [budgetItemsTableHeadNames[index]]: element,
+            };
 
-            budgetItemsArray.forEach((element, index) => {
-              const budgetItemsNormalizedValue = {
-                [budgetItemsTableHeadNames[index]]: element,
-              };
-
-              budgetItemsNormalizedData = {
-                ...budgetItemsNormalizedData,
-                ...budgetItemsNormalizedValue,
-              };
-            });
-
-            budgetItemsHunted.push(budgetItemsNormalizedData);
-          });
-
-          const cardHeader = [
-            "itenscesta",
-            "vendaitens",
-            "valorbruto",
-            "valordesconto",
-            "valorliquido",
-          ];
-
-          const cardsValue = [] as string[];
-
-          document.querySelectorAll(".huge").forEach((element) => {
-            cardsValue.push((element as HTMLElement).innerText);
-          });
-
-          let cardAmountRepository = {} as { [key: string]: string };
-
-          cardHeader.forEach((header, index) => {
-            cardAmountRepository = {
-              ...cardAmountRepository,
-              [header]: cardsValue[index],
+            budgetItemsNormalizedData = {
+              ...budgetItemsNormalizedData,
+              ...budgetItemsNormalizedValue,
             };
           });
 
-          return { cardAmountRepository, budgetItemsHunted };
-        })
-        .catch((err) => {
-          console.log(err);
+          budgetItemsHunted.push(budgetItemsNormalizedData);
         });
 
-      budgetsHunted[index] = {
-        ...budgetsHunted[index],
-        ...values!.cardAmountRepository,
-        itens: values!.budgetItemsHunted,
-      };
+        const cardHeader = [
+          "itenscesta",
+          "vendaitens",
+          "valorbruto",
+          "valordesconto",
+          "valorliquido",
+        ];
 
-      await this.budgetsHuntedInMemoryRepository.update(budgetsHunted[index]);
+        const cardsValue = [] as string[];
 
-      console.log(
-        `Updated budget ${budgetsHunted[index].NroOrc} in database ✔`
-      );
-    }
+        document.querySelectorAll(".huge").forEach((element) => {
+          cardsValue.push((element as HTMLElement).innerText);
+        });
 
-    budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
+        let cardAmountRepository = {} as { [key: string]: string };
 
-    createJsonFile("budgets", budgetsHunted);
-  }
+        cardHeader.forEach((header, index) => {
+          cardAmountRepository = {
+            ...cardAmountRepository,
+            [header]: cardsValue[index],
+          };
+        });
 
-  public async getCost() {
-    const budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
-
-    console.log("Start hunting cost ...");
-
-    const budgetCost = [] as any[];
-
-    for (let index = 0; index < 10; index++) {
-      await this.page.goto(budgetsHunted[index].link, {
-        waitUntil: "networkidle0",
+        return { cardAmountRepository, budgetItemsHunted };
       });
 
-      await this.page.waitForSelector(".panel.panel-green>a");
-
-      await this.page.click(".panel.panel-green>a", { delay: 2000 });
-
-      await this.page.waitForSelector("#W0046DVPANEL_PNLVIDROSContainer");
-
-      await this.page.evaluate(async () => {
-        //Pegando valores de "Custo"
-
-        // eslint-disable-next-line no-debugger
-        // debugger;
-
-        const costs = document.querySelectorAll(
-          "#W0046TBLFINANCEIROR_0002 .row span"
-        );
-
-        const costsGeneral = {
-          sold: (costs[0] as HTMLElement).innerText,
-          cost: (costs[1] as HTMLElement).innerText,
-          difference: (costs[2] as HTMLElement).innerText,
-          percent: (costs[3] as HTMLElement).innerText,
-        };
-
-        //Valores dos Materiais Utilizados
-        //Perfil
-        const still = document.querySelectorAll(
-          "#W0046W0096TBLFINANCEIRO_0001 span"
-        );
-
-        const stillCost = {
-          sold: (still[0] as HTMLElement).innerText,
-          cost: (still[1] as HTMLElement).innerText,
-          difference: (still[2] as HTMLElement).innerText,
-          percent: (still[3] as HTMLElement).innerText,
-        };
-
-        //Acessorios
-        const attachment = document.querySelectorAll(
-          "#W0046W0096TBLFINANCEIRO_0002 span"
-        );
-
-        const attachmentCost = {
-          sold: (attachment[0] as HTMLElement).innerText,
-          cost: (attachment[1] as HTMLElement).innerText,
-          difference: (attachment[2] as HTMLElement).innerText,
-          percent: (attachment[3] as HTMLElement).innerText,
-        };
-
-        //Vidros
-        const glass = document.querySelectorAll(
-          "#W0046W0096TBLFINANCEIRO_0003 span"
-        );
-
-        const glassCost = {
-          sold: (glass[0] as HTMLElement).innerText,
-          cost: (glass[1] as HTMLElement).innerText,
-          difference: (glass[2] as HTMLElement).innerText,
-          percent: (glass[3] as HTMLElement).innerText,
-        };
-
-        console.log("Cost: ", costsGeneral);
-        console.log("Strill: ", stillCost);
-        console.log("Attachment: ", attachmentCost);
-        console.log("Glass: ", glassCost);
-      });
-    }
-    console.log("Finished hunting cost ...");
-  }
-
-  public async getStill() {
-    console.log("\n[BUDGET STILL COST]");
-
-    console.log("Start hunting budget still cost...");
-
-    let budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
-
-    for (let index = 0; index < 10; index++) {
-      await this.page.goto(budgetsHunted[index].link, {
-        waitUntil: "networkidle0",
-      });
-
-      await this.page.waitForSelector("#W0085W0002GridContainerTbl");
+      let stillCostHunted: StillCostHunted[] = [];
+      let attachmentCostHunted: AttachmentCostHunted[] = [];
+      let glassCostHunted: GlassCostHunted[] = [];
 
       const linkElementExist = await this.page.evaluate(async () => {
         const linkElement = document.querySelector(
@@ -475,204 +393,264 @@ export class BudgetHunter {
           "#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2"
         );
 
-        await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2");
-
-        await this.page.waitForSelector("#W0054GridContainerTbl");
-
-        const stillCostHunted = await this.page.evaluate(async () => {
-          // eslint-disable-next-line no-debugger
-          debugger;
-          const stillTableHeadElement = document.querySelectorAll(
-            ".Table table#W0054GridContainerTbl thead>tr>th>span"
-          );
-
-          const stillTableHeadNames = [] as string[];
-
-          stillTableHeadElement.forEach((spanElement) => {
-            if ((spanElement as HTMLElement).innerText !== "") {
-              stillTableHeadNames.push(
-                (spanElement as HTMLElement).innerText.replace(
-                  /[^A-Z0-9]+/gi,
-                  ""
-                )
-              );
-            }
-          });
-
-          const stillRowsElement = document.querySelectorAll(
-            ".Table table#W0054GridContainerTbl tbody>tr.GridWithTotalizer"
-          );
-
-          const stillData = [] as any[];
-
-          const buttonElementText = (
-            document.querySelector(
-              ".btn.btn-primary.dropdown-toggle"
-            ) as HTMLElement
-          ).innerText.match(/(\d+)(?!.*\d)/g);
-
-          const paginationLenght = buttonElementText
-            ? Number(buttonElementText[0])
-            : 1;
-
-          for (let index = 0; index < paginationLenght; index++) {
-            stillRowsElement.forEach((rowElement) => {
-              const stillValues = [] as any[];
-              const stillSpanElement = rowElement.querySelectorAll("td>p>span");
-
-              stillSpanElement.forEach((element) => {
-                stillValues.push((element as HTMLElement).innerText);
-              });
-
-              stillData.push(stillValues);
-            });
-          }
-
-          const stillRepository = [] as StillCostHunted[];
-          //eslint-disable-next-line no-debugger
-          // debugger;
-          stillData.forEach((stillArray) => {
-            let stillNormalizedData = {} as StillCostHunted;
-
-            stillArray.forEach((element: HTMLElement, index: number) => {
-              const stillNormalizedValue = {
-                [stillTableHeadNames[index]]: element,
-              };
-
-              stillNormalizedData = {
-                ...stillNormalizedData,
-                ...stillNormalizedValue,
-              };
-            });
-
-            stillRepository.push(stillNormalizedData);
-          });
-
-          return stillRepository;
-        });
-
-        console.log("Finished hunting still ...");
-
-        const budgetsHuntedUpdated = {
-          ...budgetsHunted[index],
-          cost: {
-            still: stillCostHunted,
-          },
-        };
-
-        await this.budgetsHuntedInMemoryRepository.update(budgetsHuntedUpdated);
-
-        console.log(
-          `Updated budget ${budgetsHunted[index].NroOrc} in database ✔`
-        );
+        stillCostHunted = await this.getStill();
+        attachmentCostHunted = await this.getAttachment();
+        glassCostHunted = await this.getGlass();
       }
+
+      const budgetsHuntedUpdated = {
+        ...budgetsHunted[index],
+        ...values!.cardAmountRepository,
+        itens: values!.budgetItemsHunted,
+        cost: {
+          still: stillCostHunted,
+          attachment: attachmentCostHunted,
+          glass: glassCostHunted,
+        },
+      };
+
+      await this.budgetsHuntedInMemoryRepository.update(budgetsHuntedUpdated);
+
+      console.log(
+        `
+        Still Cost: ${stillCostHunted.length},
+        Attachment Cost: ${attachmentCostHunted.length},
+        Glass Cost: ${glassCostHunted.length},
+        Updated new hunting on budget ${budgetsHunted[index].NroOrc} in database ✔
+        `
+      );
     }
 
     budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
+
     createJsonFile("budgets", budgetsHunted);
   }
 
-  public async getAttachment() {
-    const attachmentTableHeadElement = document.querySelectorAll(
-      ".Table table#W0062GridContainerTbl thead>tr>th>span"
-    );
+  public async getStill(): Promise<StillCostHunted[]> {
+    console.log("\n[BUDGET STILL COST]");
 
-    const attachmentTableHeadNames = [] as any[];
+    console.log("Start hunting budget still cost...");
 
-    attachmentTableHeadElement.forEach((spanElement) => {
-      if ((spanElement as HTMLElement).innerText !== "") {
-        attachmentTableHeadNames.push(
-          (spanElement as HTMLElement).innerText.replace(/[^A-Z0-9]+/gi, "")
-        );
+    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2");
+
+    await this.page.waitForSelector("#W0054GridContainerTbl");
+
+    const stillCostHunted = await this.page.evaluate(async () => {
+      const stillTableHeadElement = document.querySelectorAll(
+        ".Table table#W0054GridContainerTbl thead>tr>th>span"
+      );
+
+      const stillTableHeadNames = [] as string[];
+
+      stillTableHeadElement.forEach((spanElement) => {
+        if ((spanElement as HTMLElement).innerText !== "") {
+          stillTableHeadNames.push(
+            (spanElement as HTMLElement).innerText.replace(/[^A-Z0-9]+/gi, "")
+          );
+        }
+      });
+
+      const stillRowsElement = document.querySelectorAll(
+        ".Table table#W0054GridContainerTbl tbody>tr.GridWithTotalizer"
+      );
+
+      const stillData = [] as any[];
+
+      const buttonElementExist = document.querySelector(
+        ".btn.btn-primary.dropdown-toggle"
+      ) as HTMLElement;
+
+      let paginationLenght = 0;
+
+      if (buttonElementExist) {
+        const buttonElementText =
+          buttonElementExist.innerText.match(/(\d+)(?!.*\d)/g);
+
+        paginationLenght = buttonElementText ? Number(buttonElementText[0]) : 0;
       }
-    });
 
-    const attachmentRowsElement = document.querySelectorAll(
-      ".Table table#W0062GridContainerTbl tbody>tr.GridWithTotalizer"
-    );
+      for (let index = 0; index < paginationLenght; index++) {
+        stillRowsElement.forEach((rowElement) => {
+          const stillValues = [] as any[];
+          const stillSpanElement = rowElement.querySelectorAll("td>p>span");
 
-    const attachmentData = [] as any[];
+          stillSpanElement.forEach((element) => {
+            stillValues.push((element as HTMLElement).innerText);
+          });
 
-    attachmentRowsElement.forEach((rowElement) => {
-      const attachmentValues = [] as any[];
-      const attachmentSpanElement = rowElement.querySelectorAll("td>p>span");
+          stillData.push(stillValues);
+        });
+      }
 
-      attachmentSpanElement.forEach((element) => {
-        attachmentValues.push((element as HTMLElement).innerText);
+      const stillRepository = [] as StillCostHunted[];
+
+      stillData.forEach((stillArray) => {
+        let stillNormalizedData = {} as StillCostHunted;
+
+        stillArray.forEach((element: HTMLElement, index: number) => {
+          const stillNormalizedValue = {
+            [stillTableHeadNames[index]]: element,
+          };
+
+          stillNormalizedData = {
+            ...stillNormalizedData,
+            ...stillNormalizedValue,
+          };
+        });
+
+        stillRepository.push(stillNormalizedData);
       });
 
-      attachmentData.push(attachmentValues);
+      return stillRepository;
     });
 
-    const attachmentRepository = [];
-
-    attachmentData.forEach((attachmentArray) => {
-      let attachmentNormalizedData = {};
-
-      attachmentArray.forEach((element: HTMLElement, index: number) => {
-        const attachmentNormalizedValue = {
-          [attachmentTableHeadNames[index]]: element,
-        };
-
-        attachmentNormalizedData = {
-          ...attachmentNormalizedData,
-          ...attachmentNormalizedValue,
-        };
-      });
-
-      attachmentRepository.push(attachmentNormalizedData);
-    });
+    return stillCostHunted;
   }
 
-  public async getGlass() {
-    const glassTableHeadElement = document.querySelectorAll(
-      ".Table table#W0070GridContainerTbl thead>tr>th>span"
-    );
+  public async getAttachment(): Promise<AttachmentCostHunted[]> {
+    console.log("\n[BUDGET ATTACHMENT COST]");
 
-    const glassTableHeadNames = [] as any[];
+    console.log("Start hunting budget attachment cost...");
 
-    glassTableHeadElement.forEach((spanElement) => {
-      if ((spanElement as HTMLElement).innerText !== "") {
-        glassTableHeadNames.push(
-          (spanElement as HTMLElement).innerText.replace(/[^A-Z0-9]+/gi, "")
-        );
+    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel3");
+
+    await this.page.waitForSelector("#W0062GridContainerTbl");
+
+    const attachmentCostHunted = await this.page.evaluate(async () => {
+      const attachmentTableHeadElement = document.querySelectorAll(
+        ".Table table#W0062GridContainerTbl thead>tr>th>span"
+      );
+
+      const attachmentTableHeadNames = [] as string[];
+
+      attachmentTableHeadElement.forEach((spanElement) => {
+        if ((spanElement as HTMLElement).innerText !== "") {
+          attachmentTableHeadNames.push(
+            (spanElement as HTMLElement).innerText.replace(/[^A-Z0-9]+/gi, "")
+          );
+        }
+      });
+
+      const attachmentRowsElement = document.querySelectorAll(
+        ".Table table#W0062GridContainerTbl tbody>tr.GridWithTotalizer"
+      );
+
+      const attachmentData = [] as any[];
+
+      const buttonElementExist = document.querySelector(
+        ".btn.btn-primary.dropdown-toggle"
+      ) as HTMLElement;
+
+      let paginationLenght = 0;
+
+      if (buttonElementExist) {
+        const buttonElementText =
+          buttonElementExist.innerText.match(/(\d+)(?!.*\d)/g);
+
+        paginationLenght = buttonElementText ? Number(buttonElementText[0]) : 0;
       }
+
+      for (let index = 0; index < paginationLenght; index++) {
+        attachmentRowsElement.forEach((rowElement) => {
+          const attachmentValues = [] as any[];
+          const attachmentSpanElement =
+            rowElement.querySelectorAll("td>p>span");
+
+          attachmentSpanElement.forEach((element) => {
+            attachmentValues.push((element as HTMLElement).innerText);
+          });
+
+          attachmentData.push(attachmentValues);
+        });
+      }
+
+      const attachmentRepository: AttachmentCostHunted[] = [];
+
+      attachmentData.forEach((attachmentArray) => {
+        let attachmentNormalizedData = {} as AttachmentCostHunted;
+
+        attachmentArray.forEach((element: HTMLElement, index: number) => {
+          const attachmentNormalizedValue = {
+            [attachmentTableHeadNames[index]]: element,
+          };
+
+          attachmentNormalizedData = {
+            ...attachmentNormalizedData,
+            ...attachmentNormalizedValue,
+          };
+        });
+
+        attachmentRepository.push(attachmentNormalizedData);
+      });
+      return attachmentRepository;
     });
 
-    const glassRowsElement = document.querySelectorAll(
-      ".Table table#W0070GridContainerTbl tbody>tr.GridWithTotalizer"
-    );
+    return attachmentCostHunted;
+  }
 
-    const glassData = [] as any[];
+  public async getGlass(): Promise<GlassCostHunted[]> {
+    console.log("\n[BUDGET GLASS COST]");
 
-    glassRowsElement.forEach((rowElement) => {
-      const glassValues = [] as any[];
-      const glassSpanElement = rowElement.querySelectorAll("td>p>span");
+    console.log("Start hunting budget glass cost...");
 
-      glassSpanElement.forEach((element) => {
-        glassValues.push((element as HTMLElement).innerText);
+    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel4");
+
+    await this.page.waitForSelector("#W0070GridContainerTbl");
+
+    const glassCostHunted = await this.page.evaluate(async () => {
+      const glassTableHeadElement = document.querySelectorAll(
+        ".Table table#W0070GridContainerTbl thead>tr>th>span"
+      );
+
+      const glassTableHeadNames = [] as any[];
+
+      glassTableHeadElement.forEach((spanElement) => {
+        if ((spanElement as HTMLElement).innerText !== "") {
+          glassTableHeadNames.push(
+            (spanElement as HTMLElement).innerText.replace(/[^A-Z0-9]+/gi, "")
+          );
+        }
       });
 
-      glassData.push(glassValues);
-    });
+      const glassRowsElement = document.querySelectorAll(
+        ".Table table#W0070GridContainerTbl tbody>tr.GridWithTotalizer"
+      );
 
-    const glassRepository = [];
+      const glassData = [] as any[];
 
-    glassData.forEach((glassArray) => {
-      let glassNormalizedData = {};
+      glassRowsElement.forEach((rowElement) => {
+        const glassValues = [] as any[];
+        const glassSpanElement = rowElement.querySelectorAll("td>p>span");
 
-      glassArray.forEach((element: HTMLElement, index: number) => {
-        const glassNormalizedValue = {
-          [glassTableHeadNames[index]]: element,
-        };
+        glassSpanElement.forEach((element) => {
+          glassValues.push((element as HTMLElement).innerText);
+        });
 
-        glassNormalizedData = {
-          ...glassNormalizedData,
-          ...glassNormalizedValue,
-        };
+        glassData.push(glassValues);
       });
 
-      glassRepository.push(glassNormalizedData);
+      const glassRepository: GlassCostHunted[] = [];
+
+      glassData.forEach((glassArray) => {
+        let glassNormalizedData = {} as GlassCostHunted;
+
+        glassArray.forEach((element: HTMLElement, index: number) => {
+          const glassNormalizedValue = {
+            [glassTableHeadNames[index]]: element,
+          };
+
+          glassNormalizedData = {
+            ...glassNormalizedData,
+            ...glassNormalizedValue,
+          };
+        });
+
+        glassRepository.push(glassNormalizedData);
+      });
+
+      return glassRepository;
     });
+
+    return glassCostHunted;
   }
 }

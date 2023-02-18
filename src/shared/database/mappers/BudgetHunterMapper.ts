@@ -1,6 +1,6 @@
-import { BudgetHuntedDTO } from "../../dtos/BudgetHuntedDTO";
-import { dateStringToDate } from "./../../shared/helpers/dateStringToDate";
-import { amountStringToNumber } from "../../shared/helpers/amountStringToNumber";
+import { BudgetHuntedDTO } from "../../../dtos/BudgetHuntedDTO";
+import { dateStringToDate } from "@shared/helpers/dateStringToDate";
+import { amountStringToNumber } from "@shared/helpers/amountStringToNumber";
 
 const statusBudget = {
   ORÇAMENTO: "budget",
@@ -37,7 +37,8 @@ class BudgetHunterMapper {
       soldAt: dateStringToDate(budget.DtVenda),
       registered: dateStringToDate(budget.DtCadastro),
       amount: amountStringToNumber(budget.Vlr),
-      status: statusBudget[budget.Situao as keyof typeof statusBudget],
+      status_budget: statusBudget[budget.Situao as keyof typeof statusBudget],
+      status_producer: budget.EstagioProduo,
       salesman: budget.Vendedor,
     };
   }

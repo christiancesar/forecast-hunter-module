@@ -12,6 +12,4 @@ import "dotenv/config";
   await budgetHunter.load();
   await budgetHunter.getBudgets();
   await budgetHunter.getBudgetItems();
-  await budgetHunter.getStill();
-  // await budgetHunter.getCost(); //Dont work
 })();
