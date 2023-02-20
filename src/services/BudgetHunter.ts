@@ -1,9 +1,13 @@
+import "dotenv/config";
+import puppeteer, { Browser, Page } from "puppeteer";
+
 import { BudgetItemsHuntedInMemoryRepository } from "@shared/database/inMemory/hunted/BudgetItemsHuntedInMemoryRepository";
 import { BudgetsHuntedInMemoryRepository } from "@shared/database/inMemory/hunted/BudgetsHuntedInMemoryRepository";
-import "dotenv/config";
-import { BudgetItemHuntedDTO } from "../dtos/BudgetItemHuntedDTO";
-import puppeteer, { Browser, Page } from "puppeteer";
+import { AttachmentCostHuntedDTO } from "src/dtos/AttachmentCostHuntedDTO";
+import { GlassCostHuntedDTO } from "src/dtos/GlassCostHuntedDTO";
+import { StillCostHuntedDTO } from "src/dtos/StillCostHuntedDTO";
 import { BudgetHuntedDTO } from "../dtos/BudgetHuntedDTO";
+import { BudgetItemHuntedDTO } from "../dtos/BudgetItemHuntedDTO";
 import { createJsonFile } from "../shared/helpers/createJsonFile";
 
 type BudgetHunterParams = {
@@ -13,64 +17,6 @@ type BudgetHunterParams = {
   url: string;
 };
 
-type GlassCostHunted = {
-  Licena: string;
-  NroOramento: string;
-  OrcamentoValorVidroId: string;
-  CODIGO: string;
-  COR: string;
-  QTDE: string;
-  M2: string;
-  M2ARR: string;
-  PESO: string;
-  VLRUNIT: string;
-  CUSTO: string;
-  VENDA: string;
-  DIF: string;
-  AC: string;
-};
-
-type AttachmentCostHunted = {
-  ID: string;
-  CDIGO: string;
-  SEUCDIGO: string;
-  NOME: string;
-  UN: string;
-  COR: string;
-  QTDE: string;
-  QTDEMB: string;
-  VLRUNIT: string;
-  VLRCUSTO: string;
-  VVENDA: string;
-  DIF: string;
-  CUSTOEMB: string;
-  VENDAEMB: string;
-};
-
-type StillCostHunted = {
-  Id: string;
-  CDIGO: string;
-  SEUCDIGO: string;
-  Nome: string;
-  COR: string;
-  PESO: string;
-  Peso: string;
-  ML: string;
-  CUSTOKGML: string;
-  VlrCusto: string;
-  VLRVENDA: string;
-  Diferena: string;
-  VlrTrat: string;
-  MLSobra: string;
-  MLSucata: string;
-  PesoSobra: string;
-  PesoSucata: string;
-  VlrSobra: string;
-  VlrSucata: string;
-  QTBARRAS: string;
-  ID: string;
-  VLRCUSTOTRAT: string;
-};
 export class BudgetHunter {
   private user: string | undefined;
   private password: string | undefined;
@@ -372,9 +318,9 @@ export class BudgetHunter {
         return { cardAmountRepository, budgetItemsHunted };
       });
 
-      let stillCostHunted: StillCostHunted[] = [];
-      let attachmentCostHunted: AttachmentCostHunted[] = [];
-      let glassCostHunted: GlassCostHunted[] = [];
+      let stillCostHunted: StillCostHuntedDTO[] = [];
+      let attachmentCostHunted: AttachmentCostHuntedDTO[] = [];
+      let glassCostHunted: GlassCostHuntedDTO[] = [];
 
       const linkElementExist = await this.page.evaluate(async () => {
         const linkElement = document.querySelector(
@@ -426,7 +372,7 @@ export class BudgetHunter {
     createJsonFile("budgets", budgetsHunted);
   }
 
-  public async getStill(): Promise<StillCostHunted[]> {
+  public async getStill(): Promise<StillCostHuntedDTO[]> {
     console.log("\n[BUDGET STILL COST]");
 
     console.log("Start hunting budget still cost...");
@@ -482,10 +428,10 @@ export class BudgetHunter {
         });
       }
 
-      const stillRepository = [] as StillCostHunted[];
+      const stillRepository = [] as StillCostHuntedDTO[];
 
       stillData.forEach((stillArray) => {
-        let stillNormalizedData = {} as StillCostHunted;
+        let stillNormalizedData = {} as StillCostHuntedDTO;
 
         stillArray.forEach((element: HTMLElement, index: number) => {
           const stillNormalizedValue = {
@@ -507,7 +453,7 @@ export class BudgetHunter {
     return stillCostHunted;
   }
 
-  public async getAttachment(): Promise<AttachmentCostHunted[]> {
+  public async getAttachment(): Promise<AttachmentCostHuntedDTO[]> {
     console.log("\n[BUDGET ATTACHMENT COST]");
 
     console.log("Start hunting budget attachment cost...");
@@ -564,10 +510,10 @@ export class BudgetHunter {
         });
       }
 
-      const attachmentRepository: AttachmentCostHunted[] = [];
+      const attachmentRepository: AttachmentCostHuntedDTO[] = [];
 
       attachmentData.forEach((attachmentArray) => {
-        let attachmentNormalizedData = {} as AttachmentCostHunted;
+        let attachmentNormalizedData = {} as AttachmentCostHuntedDTO;
 
         attachmentArray.forEach((element: HTMLElement, index: number) => {
           const attachmentNormalizedValue = {
@@ -588,7 +534,7 @@ export class BudgetHunter {
     return attachmentCostHunted;
   }
 
-  public async getGlass(): Promise<GlassCostHunted[]> {
+  public async getGlass(): Promise<GlassCostHuntedDTO[]> {
     console.log("\n[BUDGET GLASS COST]");
 
     console.log("Start hunting budget glass cost...");
@@ -598,11 +544,14 @@ export class BudgetHunter {
     await this.page.waitForSelector("#W0070GridContainerTbl");
 
     const glassCostHunted = await this.page.evaluate(async () => {
+      // eslint-disable-next-line no-debugger
+      debugger;
+
       const glassTableHeadElement = document.querySelectorAll(
         ".Table table#W0070GridContainerTbl thead>tr>th>span"
       );
 
-      const glassTableHeadNames = [] as any[];
+      const glassTableHeadNames = [] as string[];
 
       glassTableHeadElement.forEach((spanElement) => {
         if ((spanElement as HTMLElement).innerText !== "") {
@@ -618,21 +567,36 @@ export class BudgetHunter {
 
       const glassData = [] as any[];
 
-      glassRowsElement.forEach((rowElement) => {
-        const glassValues = [] as any[];
-        const glassSpanElement = rowElement.querySelectorAll("td>p>span");
+      const buttonElementExist = document.querySelector(
+        ".btn.btn-primary.dropdown-toggle"
+      ) as HTMLElement;
 
-        glassSpanElement.forEach((element) => {
-          glassValues.push((element as HTMLElement).innerText);
+      let paginationLenght = 0;
+
+      if (buttonElementExist) {
+        const buttonElementText =
+          buttonElementExist.innerText.match(/(\d+)(?!.*\d)/g);
+
+        paginationLenght = buttonElementText ? Number(buttonElementText[0]) : 0;
+      }
+
+      for (let index = 0; index < paginationLenght; index++) {
+        glassRowsElement.forEach((rowElement) => {
+          const glassValues = [] as any[];
+          const glassSpanElement = rowElement.querySelectorAll("td>p>span");
+
+          glassSpanElement.forEach((element) => {
+            glassValues.push((element as HTMLElement).innerText);
+          });
+
+          glassData.push(glassValues);
         });
+      }
 
-        glassData.push(glassValues);
-      });
-
-      const glassRepository: GlassCostHunted[] = [];
+      const glassRepository: GlassCostHuntedDTO[] = [];
 
       glassData.forEach((glassArray) => {
-        let glassNormalizedData = {} as GlassCostHunted;
+        let glassNormalizedData = {} as GlassCostHuntedDTO;
 
         glassArray.forEach((element: HTMLElement, index: number) => {
           const glassNormalizedValue = {

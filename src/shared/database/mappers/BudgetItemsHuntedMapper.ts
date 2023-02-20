@@ -1,15 +1,15 @@
-import { BudgetItemHuntedDTO } from "./../../../dtos/BudgetItemHuntedDTO";
+import { BudgetItemHuntedDTO } from "../../../dtos/BudgetItemHuntedDTO";
 import { amountStringToNumber } from "@shared/helpers/amountStringToNumber";
 
 type BudgetItems = {
-  order: string;
-  budgetShortId: string;
+  order: number;
+  budget_short_id: number;
   license: number;
   description: string;
   quantity: number;
-  unitValue: number;
-  totalValue: number;
-  totalModifiedValue: number;
+  unit_amount: number;
+  total_amount: number;
+  total_modified_amount: number;
   modified: boolean;
   width: number;
   height: number;
@@ -19,14 +19,14 @@ type BudgetItems = {
 class BudgetItemsHuntedMapper {
   toDomain(budgetItem: BudgetItemHuntedDTO): BudgetItems {
     return {
-      order: budgetItem.Ord3,
-      budgetShortId: budgetItem.NroOramento20,
+      order: Number(budgetItem.Ord3),
+      budget_short_id: Number(budgetItem.NroOramento20),
       license: Number(budgetItem.Licenca22),
       description: budgetItem.Item26,
       quantity: amountStringToNumber(budgetItem.Qtd8),
-      unitValue: amountStringToNumber(budgetItem.VlrUnt9),
-      totalValue: amountStringToNumber(budgetItem.VlrTotal10),
-      totalModifiedValue: amountStringToNumber(budgetItem.VlrAlterado18),
+      unit_amount: amountStringToNumber(budgetItem.VlrUnt9),
+      total_amount: amountStringToNumber(budgetItem.VlrTotal10),
+      total_modified_amount: amountStringToNumber(budgetItem.VlrAlterado18),
       modified:
         amountStringToNumber(budgetItem.VlrAlterado18) !==
         amountStringToNumber(budgetItem.VlrTotal10),
