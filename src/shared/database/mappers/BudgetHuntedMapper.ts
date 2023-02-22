@@ -5,8 +5,12 @@ import BudgetItemsHunterMapper from "./BudgetItemsHuntedMapper";
 import BudgetItemsStillHuntedMapper from "./BudgetItemsStillHuntedMapper";
 import BudgetItemsAttchmentHunted from "./BudgetItemsAttchmentHuntedMapper";
 import BudgetItemsGlassHuntedMapper from "./BudgetItemsGlassHuntedMapper";
+import BudgetItemsKitsHuntedMapper from "./BudgetItemsKitsHuntedMapper";
+import { BudgetItemsDTO } from "src/dtos/domain/BudgetItemsDTO";
+import { StillDTO } from "src/dtos/domain/StillDTO";
+import { BudgetDTO } from "src/dtos/domain/BudgetDTO";
 
-const statusBudget = {
+export const statusBudget = {
   ORÇAMENTO: "budget",
   FATURADO: "billed",
   CANCELADO: "canceled",
@@ -15,21 +19,25 @@ const statusBudget = {
 } as const;
 
 class BudgetHuntedMapper {
-  toDomain(budget: BudgetHuntedDTO) {
+  toDomain(budget: BudgetHuntedDTO): BudgetDTO {
     const customerPhones = [budget.Fone, budget.Fone2, budget.Celular];
+
     const items = budget.itens.map((item) => {
       return BudgetItemsHunterMapper.toDomain(item);
     });
 
     const costs = {
-      still: budget.cost.still?.map((stillCost) => {
+      still: budget.cost.still.map((stillCost) => {
         return BudgetItemsStillHuntedMapper.toDomain(stillCost);
       }),
-      attachment: budget.cost.attachment?.map((attachmentCost) => {
+      attachment: budget.cost.attachment.map((attachmentCost) => {
         return BudgetItemsAttchmentHunted.toDomain(attachmentCost);
       }),
-      glass: budget.cost.glass?.map((glassCost) => {
+      glass: budget.cost.glass.map((glassCost) => {
         return BudgetItemsGlassHuntedMapper.toDomain(glassCost);
+      }),
+      kits: budget.cost.kits.map((kitCost) => {
+        return BudgetItemsKitsHuntedMapper.toDomain(kitCost);
       }),
     };
 

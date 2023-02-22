@@ -1,4 +1,8 @@
+import { AttachmentCostHuntedDTO } from "./AttachmentCostHuntedDTO";
 import { BudgetItemHuntedDTO } from "./BudgetItemHuntedDTO";
+import { GlassCostHuntedDTO } from "./GlassCostHuntedDTO";
+import { KitsCostHuntedDTO } from "./KitsCostHuntedDTO";
+import { StillCostHuntedDTO } from "./StillCostHuntedDTO";
 
 export type BudgetHuntedDTO = {
   NroOrc: string;
@@ -72,6 +76,11 @@ export type BudgetHuntedDTO = {
   valorbruto: string;
   valordesconto: string;
   valorliquido: string;
-  cost: { still?: any[]; glass?: any[]; attachment?: any[] };
+  cost: {
+    still: StillCostHuntedDTO[];
+    glass: GlassCostHuntedDTO[];
+    attachment: AttachmentCostHuntedDTO[];
+    kits: KitsCostHuntedDTO[];
+  };
   itens: BudgetItemHuntedDTO[];
 };

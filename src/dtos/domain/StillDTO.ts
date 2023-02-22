@@ -1,0 +1,21 @@
+export type StillDTO = {
+  code: string;
+  internal_code: string;
+  description: string;
+  color: string;
+  quantity: number;
+  weight: number;
+  linear_meter: number;
+  per_kg_per_lm_amount: number;
+  cost_amount: number;
+  sale_amount: number;
+  processing_amount: number;
+  cost_processing_amount: number;
+  diff_amount: number;
+  remnant_linear_meter: number;
+  waste_linear_meter: number;
+  remnant_weight: number;
+  waste_weight: number;
+  remnant_amount: number;
+  waste_amount: number;
+};

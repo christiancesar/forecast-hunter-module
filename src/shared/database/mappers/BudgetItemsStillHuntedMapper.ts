@@ -1,8 +1,9 @@
 import { amountStringToNumber } from "@shared/helpers/amountStringToNumber";
+import { StillDTO } from "src/dtos/domain/StillDTO";
 import { StillCostHuntedDTO } from "src/dtos/StillCostHuntedDTO";
 
 class BudgetItemsStillHuntedMapper {
-  toDomain(stillCostHunted: StillCostHuntedDTO) {
+  toDomain(stillCostHunted: StillCostHuntedDTO): StillDTO {
     return {
       code: stillCostHunted.CDIGO,
       internal_code: stillCostHunted.SEUCDIGO,

@@ -1,23 +1,9 @@
 import { BudgetItemHuntedDTO } from "../../../dtos/BudgetItemHuntedDTO";
 import { amountStringToNumber } from "@shared/helpers/amountStringToNumber";
-
-type BudgetItems = {
-  order: number;
-  budget_short_id: number;
-  license: number;
-  description: string;
-  quantity: number;
-  unit_amount: number;
-  total_amount: number;
-  total_modified_amount: number;
-  modified: boolean;
-  width: number;
-  height: number;
-  glass: string;
-};
+import { BudgetItemsDTO } from "src/dtos/domain/BudgetItemsDTO";
 
 class BudgetItemsHuntedMapper {
-  toDomain(budgetItem: BudgetItemHuntedDTO): BudgetItems {
+  toDomain(budgetItem: BudgetItemHuntedDTO): BudgetItemsDTO {
     return {
       order: Number(budgetItem.Ord3),
       budget_short_id: Number(budgetItem.NroOramento20),
