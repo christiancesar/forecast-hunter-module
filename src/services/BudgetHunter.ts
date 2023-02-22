@@ -79,10 +79,6 @@ export class BudgetHunter {
       "https://sistema.wvetro.com.br/wvetro/app.wvetro.home"
     );
 
-    // await this.page.waitForNavigation({
-    //   waitUntil: "networkidle0",
-    // });
-
     await this.page.waitForSelector("#btn_orcamentoview");
   }
 
@@ -358,7 +354,7 @@ export class BudgetHunter {
       });
 
       if (linkElementExist) {
-        await this.page.click(".panel.panel-green>a", { delay: 2000 });
+        await this.page.click(".panel.panel-green>a", { delay: 5000 });
 
         await this.page.waitForSelector(
           "#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2"
@@ -404,6 +400,8 @@ export class BudgetHunter {
     console.log("\n[BUDGET STILL COST]");
 
     console.log("Start hunting budget still cost...");
+
+    this.page.waitForTimeout(5000);
 
     await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2");
 
@@ -499,9 +497,32 @@ export class BudgetHunter {
 
     console.log("Start hunting budget attachment cost...");
 
+    this.page.waitForTimeout(5000);
     await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel3");
 
     await this.page.waitForSelector("#W0062GridContainerTbl");
+
+    const attachmentHeaderNames = await this.page.evaluate(async () => {
+      function getHeaderNames(selector: string): string[] {
+        const spanElements = document.querySelectorAll(selector);
+
+        const headerNames = [] as string[];
+
+        spanElements.forEach((span) => {
+          if ((span as HTMLElement).innerText !== "") {
+            headerNames.push(
+              (span as HTMLElement).innerText.replace(/[^A-Z0-9]+/gi, "")
+            );
+          }
+        });
+
+        return headerNames;
+      }
+
+      return getHeaderNames(
+        ".Table table#W0054GridContainerTbl thead>tr>th>span"
+      );
+    });
 
     const attachmentCostHunted = await this.page.evaluate(async () => {
       const attachmentTableHeadElement = document.querySelectorAll(
