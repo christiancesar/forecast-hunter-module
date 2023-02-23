@@ -435,7 +435,7 @@ export class BudgetHunter {
       delay: 3000,
     });
 
-    // await this.page.waitForSelector("#W0054GridContainerTbl");
+    await this.page.waitForTimeout(10000);
 
     const stillHeaderNames = await this.page.evaluate(async () => {
       function getHeaderNames(selector: string): string[] {
@@ -459,11 +459,17 @@ export class BudgetHunter {
       );
     });
 
-    await this.page.waitForSelector(
-      "#W0054GRIDPAGINATIONBARContainer_DVPaginationBar .btn.btn-primary.dropdown-toggle"
-    );
-
     const paginationLenght = await this.page.evaluate(async () => {
+      function navegatedOnFirstPage() {
+        const firstButtonElementIsDisabled =
+          document.querySelector(".first.disabled");
+
+        if (!firstButtonElementIsDisabled) {
+          const firstButtonElement = document.querySelector(".first a");
+          (firstButtonElement as HTMLElement).click();
+        }
+      }
+
       function getPaginationLenght(selector: string): number {
         const buttonElementExist = document.querySelector(
           selector
@@ -478,6 +484,8 @@ export class BudgetHunter {
           paginationLenght = buttonElementText
             ? Number(buttonElementText[0])
             : 0;
+
+          navegatedOnFirstPage();
         }
 
         return paginationLenght;
@@ -539,7 +547,7 @@ export class BudgetHunter {
       delay: 3000,
     });
 
-    // await this.page.waitForSelector("#W0062GridContainerTbl");
+    await this.page.waitForTimeout(1000);
 
     const attachmentHeaderNames = await this.page.evaluate(async () => {
       function getHeaderNames(selector: string): string[] {
@@ -564,8 +572,17 @@ export class BudgetHunter {
     });
 
     const paginationLenght = await this.page.evaluate(async () => {
+      function navegatedOnFirstPage() {
+        const firstButtonElementIsDisabled =
+          document.querySelector(".first.disabled");
+
+        if (!firstButtonElementIsDisabled) {
+          const firstButtonElement = document.querySelector(".first a");
+          (firstButtonElement as HTMLElement).click();
+        }
+      }
+
       function getPaginationLenght(selector: string): number {
-        debugger;
         const buttonElementExist = document.querySelector(
           selector
         ) as HTMLElement;
@@ -579,9 +596,10 @@ export class BudgetHunter {
           paginationLenght = buttonElementText
             ? Number(buttonElementText[0])
             : 0;
+
+          navegatedOnFirstPage();
         }
 
-        console.log("paginationLenght", paginationLenght);
         return paginationLenght;
       }
 
@@ -618,7 +636,7 @@ export class BudgetHunter {
         );
       });
 
-      if (paginationLenght > 1) {
+      if (paginationLenght > 1 && index < paginationLenght - 1) {
         await this.page.waitForTimeout(10000);
         await this.page.click(".next");
       }
@@ -641,78 +659,107 @@ export class BudgetHunter {
       delay: 3000,
     });
 
-    await this.page.waitForSelector("#W0070GridContainerTbl");
+    await this.page.waitForTimeout(1000);
 
-    const glassCostHunted = await this.page.evaluate(async () => {
-      const glassTableHeadElement = document.querySelectorAll(
+    const glassHeaderNames = await this.page.evaluate(async () => {
+      function getHeaderNames(selector: string): string[] {
+        const spanElements = document.querySelectorAll(selector);
+
+        const headerNames = [] as string[];
+
+        spanElements.forEach((span) => {
+          if ((span as HTMLElement).innerText !== "") {
+            headerNames.push(
+              (span as HTMLElement).innerText.replace(/[^A-Z0-9]+/gi, "")
+            );
+          }
+        });
+
+        return headerNames;
+      }
+
+      return getHeaderNames(
         ".Table table#W0070GridContainerTbl thead>tr>th>span"
       );
-
-      const glassTableHeadNames = [] as string[];
-
-      glassTableHeadElement.forEach((spanElement) => {
-        if ((spanElement as HTMLElement).innerText !== "") {
-          glassTableHeadNames.push(
-            (spanElement as HTMLElement).innerText.replace(/[^A-Z0-9]+/gi, "")
-          );
-        }
-      });
-
-      const glassRowsElement = document.querySelectorAll(
-        ".Table table#W0070GridContainerTbl tbody>tr.GridWithTotalizer"
-      );
-
-      const glassData = [] as any[];
-
-      const buttonElementExist = document.querySelector(
-        ".btn.btn-primary.dropdown-toggle"
-      ) as HTMLElement;
-
-      let paginationLenght = 0;
-
-      if (buttonElementExist) {
-        const buttonElementText =
-          buttonElementExist.innerText.match(/(\d+)(?!.*\d)/g);
-
-        paginationLenght = buttonElementText ? Number(buttonElementText[0]) : 0;
-      }
-
-      for (let index = 0; index < paginationLenght; index++) {
-        glassRowsElement.forEach((rowElement) => {
-          const glassValues = [] as any[];
-          const glassSpanElement = rowElement.querySelectorAll("td>p>span");
-
-          glassSpanElement.forEach((element) => {
-            glassValues.push((element as HTMLElement).innerText);
-          });
-
-          glassData.push(glassValues);
-        });
-      }
-
-      const glassRepository: GlassCostHuntedDTO[] = [];
-
-      glassData.forEach((glassArray) => {
-        let glassNormalizedData = {} as GlassCostHuntedDTO;
-
-        glassArray.forEach((element: HTMLElement, index: number) => {
-          const glassNormalizedValue = {
-            [glassTableHeadNames[index]]: element,
-          };
-
-          glassNormalizedData = {
-            ...glassNormalizedData,
-            ...glassNormalizedValue,
-          };
-        });
-
-        glassRepository.push(glassNormalizedData);
-      });
-
-      return glassRepository;
     });
 
-    return glassCostHunted;
+    const paginationLenght = await this.page.evaluate(async () => {
+      function navegatedOnFirstPage() {
+        const firstButtonElementIsDisabled =
+          document.querySelector(".first.disabled");
+
+        if (!firstButtonElementIsDisabled) {
+          const firstButtonElement = document.querySelector(".first a");
+          (firstButtonElement as HTMLElement).click();
+        }
+      }
+
+      function getPaginationLenght(selector: string): number {
+        const buttonElementExist = document.querySelector(
+          selector
+        ) as HTMLElement;
+
+        let paginationLenght = 0;
+
+        if (buttonElementExist) {
+          const buttonElementText =
+            buttonElementExist.innerText.match(/(\d+)(?!.*\d)/g);
+
+          paginationLenght = buttonElementText
+            ? Number(buttonElementText[0])
+            : 0;
+
+          navegatedOnFirstPage();
+        }
+
+        return paginationLenght;
+      }
+
+      return getPaginationLenght(
+        "#W0070GRIDPAGINATIONBARContainer_DVPaginationBar .btn.btn-primary.dropdown-toggle"
+      );
+    });
+
+    let glassRowsValues: string[][] = [];
+
+    for (let index = 0; index < paginationLenght; index++) {
+      glassRowsValues = await this.page.evaluate(async () => {
+        function getDataTable(selector: string): string[][] {
+          const rowsElements = document.querySelectorAll(selector);
+
+          const rowDataHunted: string[][] = [];
+
+          rowsElements.forEach((rowElement) => {
+            const values: string[] = [];
+            const spansElement = rowElement.querySelectorAll("td>p>span");
+
+            spansElement.forEach((span) => {
+              values.push((span as HTMLElement).innerText);
+            });
+
+            rowDataHunted.push(values);
+          });
+
+          return rowDataHunted;
+        }
+
+        return getDataTable(
+          ".Table table#W0070GridContainerTbl tbody>tr.GridWithTotalizer"
+        );
+      });
+
+      if (paginationLenght > 1) {
+        await this.page.waitForTimeout(10000);
+        await this.page.click(".next");
+      }
+    }
+
+    const glassRepository = unionDataHunted<GlassCostHuntedDTO>(
+      glassHeaderNames,
+      glassRowsValues
+    );
+
+    return glassRepository;
   }
 
   public async getKits(): Promise<KitsCostHuntedDTO[]> {
@@ -811,26 +858,42 @@ export class BudgetHunter {
 
     await this.page.waitForSelector("#GridContainerDiv");
 
-    await this.page.click(".first");
+    const paginationLenght = await this.page.evaluate(async () => {
+      function navegatedOnFirstPage() {
+        const firstButtonElementIsDisabled =
+          document.querySelector(".first.disabled");
 
-    const paginationLenght = await this.page.evaluate(() => {
-      const buttonElementExist = document.querySelector(
-        ".btn.btn-primary.dropdown-toggle"
-      ) as HTMLElement;
-
-      let paginationLenght = 0;
-
-      if (buttonElementExist) {
-        const buttonElementText =
-          buttonElementExist.innerText.match(/(\d+)(?!.*\d)/g);
-
-        paginationLenght = buttonElementText ? Number(buttonElementText[0]) : 0;
+        if (!firstButtonElementIsDisabled) {
+          const firstButtonElement = document.querySelector(".first a");
+          (firstButtonElement as HTMLElement).click();
+        }
       }
 
-      return paginationLenght;
-    });
+      function getPaginationLenght(selector: string): number {
+        const buttonElementExist = document.querySelector(
+          selector
+        ) as HTMLElement;
 
-    console.log("Pagination lenght: ", paginationLenght);
+        let paginationLenght = 0;
+
+        if (buttonElementExist) {
+          const buttonElementText =
+            buttonElementExist.innerText.match(/(\d+)(?!.*\d)/g);
+
+          paginationLenght = buttonElementText
+            ? Number(buttonElementText[0])
+            : 0;
+
+          navegatedOnFirstPage();
+        }
+
+        return paginationLenght;
+      }
+
+      return getPaginationLenght(
+        "#GRIDPAGINATIONBARContainer_DVPaginationBar .btn.btn-primary.dropdown-toggle"
+      );
+    });
 
     const productStockHunted: ProductStockHuntedDTO[] = [];
 
