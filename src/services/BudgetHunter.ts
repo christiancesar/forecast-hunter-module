@@ -232,11 +232,14 @@ export class BudgetHunter {
         Budgets found: ${budgets.length}
       `);
 
-      await this.page.waitForTimeout(5000);
-      await this.page.click(".next");
+      if (paginationLenght > 1) {
+        await this.page.waitForTimeout(10000);
+        await this.page.click(".next");
+      }
 
       await this.page.waitForSelector("#GridContainerDiv");
     }
+
     console.log("Finished to get budgets");
 
     console.log("Start saving budgets in database...");
@@ -354,11 +357,8 @@ export class BudgetHunter {
       });
 
       if (linkElementExist) {
-        await this.page.click(".panel.panel-green>a", { delay: 5000 });
-
-        await this.page.waitForSelector(
-          "#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2"
-        );
+        await this.page.waitForSelector(".panel.panel-green>a");
+        await this.page.click(".panel.panel-green>a", { delay: 3000 });
 
         stillCostHunted = await this.getStill();
         attachmentCostHunted = await this.getAttachment();
@@ -401,11 +401,13 @@ export class BudgetHunter {
 
     console.log("Start hunting budget still cost...");
 
-    this.page.waitForTimeout(5000);
+    await this.page.waitForSelector(
+      "#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2"
+    );
 
     await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2");
 
-    await this.page.waitForSelector("#W0054GridContainerTbl");
+    // await this.page.waitForSelector("#W0054GridContainerTbl");
 
     const stillHeaderNames = await this.page.evaluate(async () => {
       function getHeaderNames(selector: string): string[] {
@@ -449,7 +451,9 @@ export class BudgetHunter {
         return paginationLenght;
       }
 
-      return getPaginationLenght(".btn.btn-primary.dropdown-toggle");
+      return getPaginationLenght(
+        "#W0054GRIDPAGINATIONBARContainer_DVPaginationBar .btn.btn-primary.dropdown-toggle"
+      );
     });
 
     let stillRowsValues: string[][] = [];
@@ -480,8 +484,10 @@ export class BudgetHunter {
         );
       });
 
-      await this.page.waitForTimeout(5000);
-      await this.page.click(".next");
+      if (paginationLenght > 1) {
+        await this.page.waitForTimeout(10000);
+        await this.page.click(".next");
+      }
     }
 
     const stillRepository = unionDataHunted<StillCostHuntedDTO>(
@@ -497,10 +503,11 @@ export class BudgetHunter {
 
     console.log("Start hunting budget attachment cost...");
 
-    this.page.waitForTimeout(5000);
-    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel3");
+    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel3", {
+      delay: 3000,
+    });
 
-    await this.page.waitForSelector("#W0062GridContainerTbl");
+    // await this.page.waitForSelector("#W0062GridContainerTbl");
 
     const attachmentHeaderNames = await this.page.evaluate(async () => {
       function getHeaderNames(selector: string): string[] {
@@ -520,80 +527,75 @@ export class BudgetHunter {
       }
 
       return getHeaderNames(
-        ".Table table#W0054GridContainerTbl thead>tr>th>span"
-      );
-    });
-
-    const attachmentCostHunted = await this.page.evaluate(async () => {
-      const attachmentTableHeadElement = document.querySelectorAll(
         ".Table table#W0062GridContainerTbl thead>tr>th>span"
       );
-
-      const attachmentTableHeadNames = [] as string[];
-
-      attachmentTableHeadElement.forEach((spanElement) => {
-        if ((spanElement as HTMLElement).innerText !== "") {
-          attachmentTableHeadNames.push(
-            (spanElement as HTMLElement).innerText.replace(/[^A-Z0-9]+/gi, "")
-          );
-        }
-      });
-
-      const attachmentRowsElement = document.querySelectorAll(
-        ".Table table#W0062GridContainerTbl tbody>tr.GridWithTotalizer"
-      );
-
-      const attachmentData = [] as any[];
-
-      const buttonElementExist = document.querySelector(
-        ".btn.btn-primary.dropdown-toggle"
-      ) as HTMLElement;
-
-      let paginationLenght = 0;
-
-      if (buttonElementExist) {
-        const buttonElementText =
-          buttonElementExist.innerText.match(/(\d+)(?!.*\d)/g);
-
-        paginationLenght = buttonElementText ? Number(buttonElementText[0]) : 0;
-      }
-
-      for (let index = 0; index < paginationLenght; index++) {
-        attachmentRowsElement.forEach((rowElement) => {
-          const attachmentValues = [] as any[];
-          const attachmentSpanElement =
-            rowElement.querySelectorAll("td>p>span");
-
-          attachmentSpanElement.forEach((element) => {
-            attachmentValues.push((element as HTMLElement).innerText);
-          });
-
-          attachmentData.push(attachmentValues);
-        });
-      }
-
-      const attachmentRepository: AttachmentCostHuntedDTO[] = [];
-
-      attachmentData.forEach((attachmentArray) => {
-        let attachmentNormalizedData = {} as AttachmentCostHuntedDTO;
-
-        attachmentArray.forEach((element: HTMLElement, index: number) => {
-          const attachmentNormalizedValue = {
-            [attachmentTableHeadNames[index]]: element,
-          };
-
-          attachmentNormalizedData = {
-            ...attachmentNormalizedData,
-            ...attachmentNormalizedValue,
-          };
-        });
-
-        attachmentRepository.push(attachmentNormalizedData);
-      });
-      return attachmentRepository;
     });
 
-    return attachmentCostHunted;
+    const paginationLenght = await this.page.evaluate(async () => {
+      function getPaginationLenght(selector: string): number {
+        const buttonElementExist = document.querySelector(
+          selector
+        ) as HTMLElement;
+
+        let paginationLenght = 0;
+
+        if (buttonElementExist) {
+          const buttonElementText =
+            buttonElementExist.innerText.match(/(\d+)(?!.*\d)/g);
+
+          paginationLenght = buttonElementText
+            ? Number(buttonElementText[0])
+            : 0;
+        }
+
+        return paginationLenght;
+      }
+
+      return getPaginationLenght(
+        "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .btn.btn-primary.dropdown-toggle"
+      );
+    });
+
+    let attachmentRowsValues: string[][] = [];
+
+    for (let index = 0; index < paginationLenght; index++) {
+      attachmentRowsValues = await this.page.evaluate(async () => {
+        function getDataTable(selector: string): string[][] {
+          const rowsElements = document.querySelectorAll(selector);
+
+          const rowDataHunted: string[][] = [];
+
+          rowsElements.forEach((rowElement) => {
+            const values: string[] = [];
+            const spansElement = rowElement.querySelectorAll("td>p>span");
+
+            spansElement.forEach((span) => {
+              values.push((span as HTMLElement).innerText);
+            });
+
+            rowDataHunted.push(values);
+          });
+
+          return rowDataHunted;
+        }
+
+        return getDataTable(
+          ".Table table#W0062GridContainerTbl tbody>tr.GridWithTotalizer"
+        );
+      });
+
+      if (paginationLenght > 1) {
+        await this.page.waitForTimeout(10000);
+        await this.page.click(".next");
+      }
+    }
+
+    const attachmentRepository = unionDataHunted<AttachmentCostHuntedDTO>(
+      attachmentHeaderNames,
+      attachmentRowsValues
+    );
+
+    return attachmentRepository;
   }
 
   public async getGlass(): Promise<GlassCostHuntedDTO[]> {
@@ -681,10 +683,12 @@ export class BudgetHunter {
     console.log("\n[BUDGET KITS COST]");
 
     console.log("Start hunting budget kits cost...");
-
+    await this.page.waitForSelector(
+      "#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel5"
+    );
     await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel5");
 
-    await this.page.waitForSelector("#W0078GridContainerTbl");
+    // await this.page.waitForSelector("#W0078GridContainerTbl");
 
     const kitsCostHunted = await this.page.evaluate(async () => {
       const kitsTableHeadElement = document.querySelectorAll(
@@ -864,8 +868,10 @@ export class BudgetHunter {
         Content: ${JSON.stringify(productStock, null, 2)}
       `);
 
-      await this.page.waitForTimeout(10000);
-      await this.page.click(".next");
+      if (paginationLenght > 1) {
+        await this.page.waitForTimeout(10000);
+        await this.page.click(".next");
+      }
     }
 
     console.log("Product Stock Hunted Count: ", productStockHunted.length);
