@@ -20,6 +20,8 @@ type BudgetHunterParams = {
   url: string;
 };
 
+const paginationLenghtDev = 1;
+
 export class BudgetHunter {
   private user: string | undefined;
   private password: string | undefined;
@@ -73,23 +75,37 @@ export class BudgetHunter {
 
     await this.page.click("#ENTRAR");
 
-    await this.page.waitForSelector("#page-wrapper");
+    // await this.page.waitForSelector("#page-wrapper");
 
-    await this.page.goto(
-      "https://sistema.wvetro.com.br/wvetro/app.wvetro.home"
-    );
-
-    await this.page.waitForSelector("#btn_orcamentoview");
+    // await this.page.goto(
+    //   "https://sistema.wvetro.com.br/wvetro/app.wvetro.home",
+    //   { waitUntil: "domcontentloaded" }
+    // );
   }
 
   public async getBudgets(): Promise<void> {
     console.log("\n[BUDGET]");
     console.log("Starting to get budgets...");
 
+    await this.page.waitForSelector("#btn_orcamentoview");
     await this.page.click("#btn_orcamentoview");
 
-    await this.page.waitForNavigation({
-      waitUntil: "networkidle2",
+    await this.page.waitForTimeout(10000);
+
+    await this.page.evaluate(() => {
+      //Input data de cadastro
+      const initialDate = document.querySelector(
+        "#vORCAMENTODATACADASTRO"
+      ) as HTMLInputElement;
+      const finalDate = document.querySelector(
+        "#vORCAMENTODATACADASTRO_TO"
+      ) as HTMLInputElement;
+
+      initialDate.value = "";
+      initialDate?.onchange();
+
+      finalDate.value = "";
+      finalDate?.onchange();
     });
 
     await this.page.waitForSelector(".first");
@@ -97,9 +113,11 @@ export class BudgetHunter {
     await this.page.click(".first");
 
     // get pages number
-    await this.page.waitForSelector(".btn.btn-primary.dropdown-toggle");
+    await this.page.waitForSelector(
+      ".PaginationBarCaption.dropdown .btn.btn-primary.dropdown-toggle"
+    );
 
-    const paginationLenght = await this.page.evaluate(async () => {
+    let paginationLenght = await this.page.evaluate(async () => {
       function getPaginationLenght(selector: string): number {
         const buttonElementExist = document.querySelector(
           selector
@@ -119,13 +137,16 @@ export class BudgetHunter {
         return paginationLenght;
       }
 
-      return getPaginationLenght(".btn.btn-primary.dropdown-toggle");
+      return getPaginationLenght(
+        ".PaginationBarCaption.dropdown .btn.btn-primary.dropdown-toggle"
+      );
     });
 
     console.log(`Total pages: ${paginationLenght}`);
 
     const budgetsHunted: BudgetHuntedDTO[] = [];
 
+    paginationLenght = paginationLenghtDev;
     for (let pageNumber = 0; pageNumber < 1; pageNumber++) {
       // get budgets in table and normalize data
       let budgets: BudgetHuntedDTO[] = [];
@@ -249,6 +270,10 @@ export class BudgetHunter {
     );
 
     console.log(`Saving ${budgets.length} budgets in database...`);
+    console.log(
+      "Budgets",
+      budgets.map((budget) => budget.NroOrc)
+    );
   }
 
   public async getBudgetItems(): Promise<void> {
@@ -346,6 +371,8 @@ export class BudgetHunter {
       let glassCostHunted: GlassCostHuntedDTO[] = [];
       let kitsCostHunted: KitsCostHuntedDTO[] = [];
 
+      await this.page.waitForTimeout(10000);
+
       const linkElementExist = await this.page.evaluate(async () => {
         const linkElement = document.querySelector(
           ".panel.panel-green>a"
@@ -357,7 +384,6 @@ export class BudgetHunter {
       });
 
       if (linkElementExist) {
-        await this.page.waitForSelector(".panel.panel-green>a");
         await this.page.click(".panel.panel-green>a", { delay: 3000 });
 
         stillCostHunted = await this.getStill();
@@ -405,7 +431,9 @@ export class BudgetHunter {
       "#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2"
     );
 
-    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2");
+    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2", {
+      delay: 3000,
+    });
 
     // await this.page.waitForSelector("#W0054GridContainerTbl");
 
@@ -430,6 +458,10 @@ export class BudgetHunter {
         ".Table table#W0054GridContainerTbl thead>tr>th>span"
       );
     });
+
+    await this.page.waitForSelector(
+      "#W0054GRIDPAGINATIONBARContainer_DVPaginationBar .btn.btn-primary.dropdown-toggle"
+    );
 
     const paginationLenght = await this.page.evaluate(async () => {
       function getPaginationLenght(selector: string): number {
@@ -533,6 +565,7 @@ export class BudgetHunter {
 
     const paginationLenght = await this.page.evaluate(async () => {
       function getPaginationLenght(selector: string): number {
+        debugger;
         const buttonElementExist = document.querySelector(
           selector
         ) as HTMLElement;
@@ -548,6 +581,7 @@ export class BudgetHunter {
             : 0;
         }
 
+        console.log("paginationLenght", paginationLenght);
         return paginationLenght;
       }
 
@@ -603,7 +637,9 @@ export class BudgetHunter {
 
     console.log("Start hunting budget glass cost...");
 
-    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel4");
+    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel4", {
+      delay: 3000,
+    });
 
     await this.page.waitForSelector("#W0070GridContainerTbl");
 
