@@ -108,16 +108,22 @@ export class BudgetHunter {
       finalDate?.onchange();
     });
 
-    await this.page.waitForSelector(".first");
-
-    await this.page.click(".first");
-
     // get pages number
     await this.page.waitForSelector(
       ".PaginationBarCaption.dropdown .btn.btn-primary.dropdown-toggle"
     );
 
     let paginationLenght = await this.page.evaluate(async () => {
+      function navegatedOnFirstPage() {
+        const firstButtonElementIsDisabled =
+          document.querySelector(".first.disabled");
+
+        if (!firstButtonElementIsDisabled) {
+          const firstButtonElement = document.querySelector(".first a");
+          (firstButtonElement as HTMLElement).click();
+        }
+      }
+
       function getPaginationLenght(selector: string): number {
         const buttonElementExist = document.querySelector(
           selector
@@ -132,6 +138,8 @@ export class BudgetHunter {
           paginationLenght = buttonElementText
             ? Number(buttonElementText[0])
             : 0;
+
+          navegatedOnFirstPage();
         }
 
         return paginationLenght;
@@ -142,12 +150,11 @@ export class BudgetHunter {
       );
     });
 
-    console.log(`Total pages: ${paginationLenght}`);
-
     const budgetsHunted: BudgetHuntedDTO[] = [];
 
     paginationLenght = paginationLenghtDev;
-    for (let pageNumber = 0; pageNumber < 1; pageNumber++) {
+
+    for (let index = 0; index < paginationLenght; index++) {
       // get budgets in table and normalize data
       let budgets: BudgetHuntedDTO[] = [];
 
@@ -249,11 +256,12 @@ export class BudgetHunter {
       budgetsHunted.push(...budgets);
 
       console.log(`
-        Page ${pageNumber + 1} of ${paginationLenght},
+        Page ${index + 1} of ${paginationLenght},
         Budgets found: ${budgets.length}
       `);
 
-      if (paginationLenght > 1) {
+      // eslint-disable-next-line prettier/prettier
+      if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
         await this.page.waitForTimeout(10000);
         await this.page.click(".next");
       }
@@ -527,7 +535,8 @@ export class BudgetHunter {
         );
       });
 
-      if (paginationLenght > 1) {
+      // eslint-disable-next-line prettier/prettier
+      if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
         await this.page.waitForTimeout(10000);
         await this.page.click(
           "#W0054GRIDPAGINATIONBARContainer_DVPaginationBar .next"
@@ -581,8 +590,14 @@ export class BudgetHunter {
         const firstButtonElementIsDisabled = document.querySelector(
           "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .first.disabled"
         );
+        const firstButtonElementIsDisabled = document.querySelector(
+          "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .first.disabled"
+        );
 
         if (!firstButtonElementIsDisabled) {
+          const firstButtonElement = document.querySelector(
+            "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .first a"
+          );
           const firstButtonElement = document.querySelector(
             "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .first a"
           );
@@ -616,10 +631,10 @@ export class BudgetHunter {
       );
     });
 
-    let attachmentRowsValues: string[][] = [];
+    const attachmentRowsData: string[][] = [];
 
     for (let index = 0; index < paginationLenght; index++) {
-      attachmentRowsValues = await this.page.evaluate(async () => {
+      const attachmentRowsValues = await this.page.evaluate(async () => {
         function getDataTable(selector: string): string[][] {
           const rowsElements = document.querySelectorAll(selector);
 
@@ -650,11 +665,13 @@ export class BudgetHunter {
           "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .next"
         );
       }
+
+      attachmentRowsData.push(...attachmentRowsValues);
     }
 
     const attachmentRepository = unionDataHunted<AttachmentCostHuntedDTO>(
       attachmentHeaderNames,
-      attachmentRowsValues
+      attachmentRowsData
     );
 
     return attachmentRepository;
@@ -761,7 +778,8 @@ export class BudgetHunter {
         );
       });
 
-      if (paginationLenght > 1) {
+      // eslint-disable-next-line prettier/prettier
+       if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
         await this.page.waitForTimeout(10000);
         await this.page.click(
           "#W0070GRIDPAGINATIONBARContainer_DVPaginationBar .next"
@@ -1019,7 +1037,8 @@ export class BudgetHunter {
         Content: ${JSON.stringify(productStock, null, 2)}
       `);
 
-      if (paginationLenght > 1) {
+      // eslint-disable-next-line prettier/prettier
+       if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
         await this.page.waitForTimeout(10000);
         await this.page.click(
           "#GRIDPAGINATIONBARContainer_DVPaginationBar .next"
