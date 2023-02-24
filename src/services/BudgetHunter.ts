@@ -461,11 +461,14 @@ export class BudgetHunter {
 
     const paginationLenght = await this.page.evaluate(async () => {
       function navegatedOnFirstPage() {
-        const firstButtonElementIsDisabled =
-          document.querySelector(".first.disabled");
+        const firstButtonElementIsDisabled = document.querySelector(
+          "#W0054GRIDPAGINATIONBARContainer_DVPaginationBar .first.disabled"
+        );
 
         if (!firstButtonElementIsDisabled) {
-          const firstButtonElement = document.querySelector(".first a");
+          const firstButtonElement = document.querySelector(
+            "#W0054GRIDPAGINATIONBARContainer_DVPaginationBar .first a"
+          );
           (firstButtonElement as HTMLElement).click();
         }
       }
@@ -526,7 +529,9 @@ export class BudgetHunter {
 
       if (paginationLenght > 1) {
         await this.page.waitForTimeout(10000);
-        await this.page.click(".next");
+        await this.page.click(
+          "#W0054GRIDPAGINATIONBARContainer_DVPaginationBar .next"
+        );
       }
     }
 
@@ -573,11 +578,14 @@ export class BudgetHunter {
 
     const paginationLenght = await this.page.evaluate(async () => {
       function navegatedOnFirstPage() {
-        const firstButtonElementIsDisabled =
-          document.querySelector(".first.disabled");
+        const firstButtonElementIsDisabled = document.querySelector(
+          "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .first.disabled"
+        );
 
         if (!firstButtonElementIsDisabled) {
-          const firstButtonElement = document.querySelector(".first a");
+          const firstButtonElement = document.querySelector(
+            "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .first a"
+          );
           (firstButtonElement as HTMLElement).click();
         }
       }
@@ -638,7 +646,9 @@ export class BudgetHunter {
 
       if (paginationLenght > 1 && index < paginationLenght - 1) {
         await this.page.waitForTimeout(10000);
-        await this.page.click(".next");
+        await this.page.click(
+          "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .next"
+        );
       }
     }
 
@@ -685,11 +695,14 @@ export class BudgetHunter {
 
     const paginationLenght = await this.page.evaluate(async () => {
       function navegatedOnFirstPage() {
-        const firstButtonElementIsDisabled =
-          document.querySelector(".first.disabled");
+        const firstButtonElementIsDisabled = document.querySelector(
+          "#W0070GRIDPAGINATIONBARContainer_DVPaginationBar .first.disabled"
+        );
 
         if (!firstButtonElementIsDisabled) {
-          const firstButtonElement = document.querySelector(".first a");
+          const firstButtonElement = document.querySelector(
+            "#W0070GRIDPAGINATIONBARContainer_DVPaginationBar .first a"
+          );
           (firstButtonElement as HTMLElement).click();
         }
       }
@@ -750,7 +763,9 @@ export class BudgetHunter {
 
       if (paginationLenght > 1) {
         await this.page.waitForTimeout(10000);
-        await this.page.click(".next");
+        await this.page.click(
+          "#W0070GRIDPAGINATIONBARContainer_DVPaginationBar .next"
+        );
       }
     }
 
@@ -771,78 +786,112 @@ export class BudgetHunter {
     );
     await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel5");
 
-    // await this.page.waitForSelector("#W0078GridContainerTbl");
+    await this.page.waitForTimeout(1000);
 
-    const kitsCostHunted = await this.page.evaluate(async () => {
-      const kitsTableHeadElement = document.querySelectorAll(
-        "table#W0078GridContainerTbl thead>tr>th>span"
-      );
+    const kitsHeaderNames = await this.page.evaluate(async () => {
+      function getHeaderNames(selector: string): string[] {
+        const spanElements = document.querySelectorAll(selector);
 
-      const kitsTableHeadNames = [] as string[];
+        const headerNames = [] as string[];
 
-      kitsTableHeadElement.forEach((spanElement) => {
-        if ((spanElement as HTMLElement).innerText !== "") {
-          kitsTableHeadNames.push(
-            (spanElement as HTMLElement).innerText.replace(/[^A-Z0-9]+/gi, "")
-          );
-        }
-      });
-
-      const kitsRowsElement = document.querySelectorAll(
-        "table#W0078GridContainerTbl tbody>tr.GridWithTotalizer"
-      );
-
-      const kitsData = [] as any[];
-
-      const buttonElementExist = document.querySelector(
-        ".btn.btn-primary.dropdown-toggle"
-      ) as HTMLElement;
-
-      let paginationLenght = 0;
-
-      if (buttonElementExist) {
-        const buttonElementText =
-          buttonElementExist.innerText.match(/(\d+)(?!.*\d)/g);
-
-        paginationLenght = buttonElementText ? Number(buttonElementText[0]) : 0;
-      }
-
-      for (let index = 0; index < paginationLenght; index++) {
-        kitsRowsElement.forEach((rowElement) => {
-          const kitsValues = [] as any[];
-          const kitsSpanElement = rowElement.querySelectorAll("td>p>span");
-
-          kitsSpanElement.forEach((element) => {
-            kitsValues.push((element as HTMLElement).innerText);
-          });
-
-          kitsData.push(kitsValues);
-        });
-      }
-
-      const kitsRepository: KitsCostHuntedDTO[] = [];
-
-      kitsData.forEach((kitsArray) => {
-        let kitsNormalizedData = {} as KitsCostHuntedDTO;
-
-        kitsArray.forEach((element: HTMLElement, index: number) => {
-          const kitsNormalizedValue = {
-            [kitsTableHeadNames[index]]: element,
-          };
-
-          kitsNormalizedData = {
-            ...kitsNormalizedData,
-            ...kitsNormalizedValue,
-          };
+        spanElements.forEach((span) => {
+          if ((span as HTMLElement).innerText !== "") {
+            headerNames.push(
+              (span as HTMLElement).innerText.replace(/[^A-Z0-9]+/gi, "")
+            );
+          }
         });
 
-        kitsRepository.push(kitsNormalizedData);
-      });
+        return headerNames;
+      }
 
-      return kitsRepository;
+      return getHeaderNames(
+        ".Table table#W0078GridContainerTbl thead>tr>th>span"
+      );
     });
 
-    return kitsCostHunted;
+    const paginationLenght = await this.page.evaluate(async () => {
+      function navegatedOnFirstPage() {
+        const firstButtonElementIsDisabled = document.querySelector(
+          "#W0078GRIDPAGINATIONBARContainer_DVPaginationBar .first.disabled"
+        );
+
+        if (!firstButtonElementIsDisabled) {
+          const firstButtonElement = document.querySelector(
+            "#W0078GRIDPAGINATIONBARContainer_DVPaginationBar .first a"
+          );
+          (firstButtonElement as HTMLElement).click();
+        }
+      }
+
+      function getPaginationLenght(selector: string): number {
+        const buttonElementExist = document.querySelector(
+          selector
+        ) as HTMLElement;
+
+        let paginationLenght = 0;
+
+        if (buttonElementExist) {
+          const buttonElementText =
+            buttonElementExist.innerText.match(/(\d+)(?!.*\d)/g);
+
+          paginationLenght = buttonElementText
+            ? Number(buttonElementText[0])
+            : 0;
+
+          navegatedOnFirstPage();
+        }
+
+        return paginationLenght;
+      }
+
+      return getPaginationLenght(
+        "#W0078GRIDPAGINATIONBARContainer_DVPaginationBar .btn.btn-primary.dropdown-toggle"
+      );
+    });
+
+    let kitsRowsValues: string[][] = [];
+
+    for (let index = 0; index < paginationLenght; index++) {
+      kitsRowsValues = await this.page.evaluate(async () => {
+        function getDataTable(selector: string): string[][] {
+          const rowsElements = document.querySelectorAll(selector);
+
+          const rowDataHunted: string[][] = [];
+
+          rowsElements.forEach((rowElement) => {
+            const values: string[] = [];
+            const spansElement = rowElement.querySelectorAll("td>p>span");
+
+            spansElement.forEach((span) => {
+              values.push((span as HTMLElement).innerText);
+            });
+
+            rowDataHunted.push(values);
+          });
+
+          return rowDataHunted;
+        }
+
+        return getDataTable(
+          ".Table table#W0078GridContainerTbl tbody>tr.GridWithTotalizer"
+        );
+      });
+
+      if (paginationLenght > 1 && index < paginationLenght - 1) {
+        await this.page.waitForTimeout(10000);
+        await this.page.click(
+          "#W0078GRIDPAGINATIONBARContainer_DVPaginationBar .next"
+        );
+      }
+    }
+
+    const kitsRepository = unionDataHunted<KitsCostHuntedDTO>(
+      kitsHeaderNames,
+      kitsRowsValues
+    );
+
+    return kitsRepository;
   }
 
   public async getProductStock(): Promise<ProductStockHuntedDTO[]> {
@@ -860,11 +909,14 @@ export class BudgetHunter {
 
     const paginationLenght = await this.page.evaluate(async () => {
       function navegatedOnFirstPage() {
-        const firstButtonElementIsDisabled =
-          document.querySelector(".first.disabled");
+        const firstButtonElementIsDisabled = document.querySelector(
+          "#GRIDPAGINATIONBARContainer_DVPaginationBar .first.disabled"
+        );
 
         if (!firstButtonElementIsDisabled) {
-          const firstButtonElement = document.querySelector(".first a");
+          const firstButtonElement = document.querySelector(
+            "#GRIDPAGINATIONBARContainer_DVPaginationBar .first a"
+          );
           (firstButtonElement as HTMLElement).click();
         }
       }
@@ -969,7 +1021,9 @@ export class BudgetHunter {
 
       if (paginationLenght > 1) {
         await this.page.waitForTimeout(10000);
-        await this.page.click(".next");
+        await this.page.click(
+          "#GRIDPAGINATIONBARContainer_DVPaginationBar .next"
+        );
       }
     }
 
