@@ -90,7 +90,7 @@ export class BudgetHunter {
     await this.page.waitForSelector("#btn_orcamentoview");
     await this.page.click("#btn_orcamentoview");
 
-    await this.page.waitForTimeout(10000);
+    await this.page.waitForTimeout(5000);
 
     await this.page.evaluate(() => {
       //Input data de cadastro
@@ -109,11 +109,9 @@ export class BudgetHunter {
     });
 
     // get pages number
-    await this.page.waitForSelector(
-      ".PaginationBarCaption.dropdown .btn.btn-primary.dropdown-toggle"
-    );
+    await this.page.waitForTimeout(5000);
 
-    let paginationLenght = await this.page.evaluate(async () => {
+    const paginationLenght = await this.page.evaluate(async () => {
       function navegatedOnFirstPage() {
         const firstButtonElementIsDisabled =
           document.querySelector(".first.disabled");
@@ -152,7 +150,7 @@ export class BudgetHunter {
 
     const budgetsHunted: BudgetHuntedDTO[] = [];
 
-    paginationLenght = paginationLenghtDev;
+    // paginationLenght = paginationLenghtDev;
 
     for (let index = 0; index < paginationLenght; index++) {
       // get budgets in table and normalize data
@@ -262,8 +260,10 @@ export class BudgetHunter {
 
       // eslint-disable-next-line prettier/prettier
       if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
-        await this.page.waitForTimeout(10000);
-        await this.page.click(".next");
+        await this.page.waitForTimeout(5000);
+        await this.page.click(
+          "#GRIDPAGINATIONBARContainer_DVPaginationBar .next"
+        );
       }
 
       await this.page.waitForSelector("#GridContainerDiv");
@@ -379,7 +379,7 @@ export class BudgetHunter {
       let glassCostHunted: GlassCostHuntedDTO[] = [];
       let kitsCostHunted: KitsCostHuntedDTO[] = [];
 
-      await this.page.waitForTimeout(10000);
+      await this.page.waitForTimeout(5000);
 
       const linkElementExist = await this.page.evaluate(async () => {
         const linkElement = document.querySelector(
@@ -392,7 +392,7 @@ export class BudgetHunter {
       });
 
       if (linkElementExist) {
-        await this.page.click(".panel.panel-green>a", { delay: 3000 });
+        await this.page.click(".panel.panel-green>a");
 
         stillCostHunted = await this.getStill();
         attachmentCostHunted = await this.getAttachment();
@@ -439,11 +439,9 @@ export class BudgetHunter {
       "#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2"
     );
 
-    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2", {
-      delay: 3000,
-    });
+    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2");
 
-    await this.page.waitForTimeout(10000);
+    await this.page.waitForTimeout(5000);
 
     const stillHeaderNames = await this.page.evaluate(async () => {
       function getHeaderNames(selector: string): string[] {
@@ -507,10 +505,10 @@ export class BudgetHunter {
       );
     });
 
-    let stillRowsValues: string[][] = [];
+    const stillRowsData: string[][] = [];
 
     for (let index = 0; index < paginationLenght; index++) {
-      stillRowsValues = await this.page.evaluate(async () => {
+      const stillRowsValues = await this.page.evaluate(async () => {
         function getDataTable(selector: string): string[][] {
           const rowsElements = document.querySelectorAll(selector);
 
@@ -537,16 +535,18 @@ export class BudgetHunter {
 
       // eslint-disable-next-line prettier/prettier
       if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
-        await this.page.waitForTimeout(10000);
+        await this.page.waitForTimeout(5000);
         await this.page.click(
           "#W0054GRIDPAGINATIONBARContainer_DVPaginationBar .next"
         );
       }
+
+      stillRowsData.push(...stillRowsValues);
     }
 
     const stillRepository = unionDataHunted<StillCostHuntedDTO>(
       stillHeaderNames,
-      stillRowsValues
+      stillRowsData
     );
 
     return stillRepository;
@@ -557,11 +557,9 @@ export class BudgetHunter {
 
     console.log("Start hunting budget attachment cost...");
 
-    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel3", {
-      delay: 3000,
-    });
+    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel3");
 
-    await this.page.waitForTimeout(1000);
+    await this.page.waitForTimeout(5000);
 
     const attachmentHeaderNames = await this.page.evaluate(async () => {
       function getHeaderNames(selector: string): string[] {
@@ -590,14 +588,8 @@ export class BudgetHunter {
         const firstButtonElementIsDisabled = document.querySelector(
           "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .first.disabled"
         );
-        const firstButtonElementIsDisabled = document.querySelector(
-          "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .first.disabled"
-        );
 
         if (!firstButtonElementIsDisabled) {
-          const firstButtonElement = document.querySelector(
-            "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .first a"
-          );
           const firstButtonElement = document.querySelector(
             "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .first a"
           );
@@ -659,8 +651,9 @@ export class BudgetHunter {
         );
       });
 
-      if (paginationLenght > 1 && index < paginationLenght - 1) {
-        await this.page.waitForTimeout(10000);
+      // eslint-disable-next-line prettier/prettier
+      if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
+        await this.page.waitForTimeout(5000);
         await this.page.click(
           "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .next"
         );
@@ -682,11 +675,9 @@ export class BudgetHunter {
 
     console.log("Start hunting budget glass cost...");
 
-    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel4", {
-      delay: 3000,
-    });
+    await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel4");
 
-    await this.page.waitForTimeout(1000);
+    await this.page.waitForTimeout(5000);
 
     const glassHeaderNames = await this.page.evaluate(async () => {
       function getHeaderNames(selector: string): string[] {
@@ -750,10 +741,10 @@ export class BudgetHunter {
       );
     });
 
-    let glassRowsValues: string[][] = [];
+    const glassRowsData: string[][] = [];
 
     for (let index = 0; index < paginationLenght; index++) {
-      glassRowsValues = await this.page.evaluate(async () => {
+      const glassRowsValues = await this.page.evaluate(async () => {
         function getDataTable(selector: string): string[][] {
           const rowsElements = document.querySelectorAll(selector);
 
@@ -779,17 +770,19 @@ export class BudgetHunter {
       });
 
       // eslint-disable-next-line prettier/prettier
-       if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
-        await this.page.waitForTimeout(10000);
+      if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
+        await this.page.waitForTimeout(5000);
         await this.page.click(
           "#W0070GRIDPAGINATIONBARContainer_DVPaginationBar .next"
         );
       }
+
+      glassRowsData.push(...glassRowsValues);
     }
 
     const glassRepository = unionDataHunted<GlassCostHuntedDTO>(
       glassHeaderNames,
-      glassRowsValues
+      glassRowsData
     );
 
     return glassRepository;
@@ -804,7 +797,7 @@ export class BudgetHunter {
     );
     await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel5");
 
-    await this.page.waitForTimeout(1000);
+    await this.page.waitForTimeout(5000);
 
     const kitsHeaderNames = await this.page.evaluate(async () => {
       function getHeaderNames(selector: string): string[] {
@@ -868,10 +861,10 @@ export class BudgetHunter {
       );
     });
 
-    let kitsRowsValues: string[][] = [];
+    const kitsRowsData: string[][] = [];
 
     for (let index = 0; index < paginationLenght; index++) {
-      kitsRowsValues = await this.page.evaluate(async () => {
+      const kitsRowsValues = await this.page.evaluate(async () => {
         function getDataTable(selector: string): string[][] {
           const rowsElements = document.querySelectorAll(selector);
 
@@ -896,17 +889,20 @@ export class BudgetHunter {
         );
       });
 
-      if (paginationLenght > 1 && index < paginationLenght - 1) {
-        await this.page.waitForTimeout(10000);
+      // eslint-disable-next-line prettier/prettier
+      if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
+        await this.page.waitForTimeout(5000);
         await this.page.click(
           "#W0078GRIDPAGINATIONBARContainer_DVPaginationBar .next"
         );
       }
+
+      kitsRowsData.push(...kitsRowsValues);
     }
 
     const kitsRepository = unionDataHunted<KitsCostHuntedDTO>(
       kitsHeaderNames,
-      kitsRowsValues
+      kitsRowsData
     );
 
     return kitsRepository;
@@ -1038,8 +1034,8 @@ export class BudgetHunter {
       `);
 
       // eslint-disable-next-line prettier/prettier
-       if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
-        await this.page.waitForTimeout(10000);
+      if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
+        await this.page.waitForTimeout(5000);
         await this.page.click(
           "#GRIDPAGINATIONBARContainer_DVPaginationBar .next"
         );
