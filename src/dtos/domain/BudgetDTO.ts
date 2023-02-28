@@ -24,5 +24,5 @@ export type BudgetDTO = {
   status_budget: string;
   status_producer: string;
   salesman: string;
-  costs: CostDTO;
+  costs?: CostDTO;
 };

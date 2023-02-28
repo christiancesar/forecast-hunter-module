@@ -1,8 +1,9 @@
 import { amountStringToNumber } from "@shared/helpers/amountStringToNumber";
+import { GlassDTO } from "src/dtos/domain/GlassDTO";
 import { GlassCostHuntedDTO } from "src/dtos/GlassCostHuntedDTO";
 
 class BudgetItemsGlassHuntedMapper {
-  toDomain(glassCostHunted: GlassCostHuntedDTO) {
+  toDomain(glassCostHunted: GlassCostHuntedDTO): GlassDTO {
     return {
       code: glassCostHunted.CODIGO,
       color: glassCostHunted.COR,

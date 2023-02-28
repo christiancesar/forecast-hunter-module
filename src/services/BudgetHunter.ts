@@ -12,6 +12,7 @@ import { StillCostHuntedDTO } from "src/dtos/StillCostHuntedDTO";
 import { BudgetHuntedDTO } from "../dtos/BudgetHuntedDTO";
 import { BudgetItemHuntedDTO } from "../dtos/BudgetItemHuntedDTO";
 import { createJsonFile } from "../shared/helpers/createJsonFile";
+import { LooseItemsHuntedDTO } from "src/dtos/LooseItemsHuntedDTO";
 
 type BudgetHunterParams = {
   user: string | undefined;
@@ -93,6 +94,10 @@ export class BudgetHunter {
     await this.page.waitForTimeout(5000);
 
     await this.page.evaluate(() => {
+      //Change status to "Faturado"
+      (
+        document.querySelector("#vORCAMENTOSITUACAO") as HTMLSelectElement
+      ).value = "F";
       //Input data de cadastro
       const initialDate = document.querySelector(
         "#vORCAMENTODATACADASTRO"
@@ -259,7 +264,7 @@ export class BudgetHunter {
       `);
 
       // eslint-disable-next-line prettier/prettier
-      if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
+      if ((paginationLenght > 1) && (index <= (paginationLenght - 1))) {
         await this.page.waitForTimeout(5000);
         await this.page.click(
           "#GRIDPAGINATIONBARContainer_DVPaginationBar .next"
@@ -293,141 +298,200 @@ export class BudgetHunter {
     // const budgetItemsHuntedRepository = [] as BudgetItemHuntedDTO[];
 
     for (let index = 0; index < budgetsHunted.length; index++) {
-      await this.page.goto(budgetsHunted[index].link, {
-        waitUntil: "networkidle0",
-      });
-
-      await this.page.waitForSelector("#W0085W0002GridContainerTbl");
-
-      const values = await this.page.evaluate(async () => {
-        const budgetItemsTableHeadElement = document.querySelectorAll(
-          ".Table table#W0085W0002GridContainerTbl thead>tr>th"
-        );
-
-        const budgetItemsTableHeadNames = [] as string[];
-
-        budgetItemsTableHeadElement.forEach((spanElement, index) => {
-          let value;
-
-          if ((spanElement as HTMLElement).innerText.trim() === "") {
-            value = "void";
-          } else {
-            value = (spanElement as HTMLElement).innerText.replace(
-              /[^A-Z0-9]+/gi,
-              ""
-            );
-          }
-
-          budgetItemsTableHeadNames.push(`${value}${index}`);
+      try {
+        await this.page.goto(budgetsHunted[index].link, {
+          waitUntil: "networkidle0",
         });
 
-        const budgetItems = (
-          document.querySelector(
-            "#W0085W0002GridContainerDataV"
-          ) as HTMLInputElement
-        ).value;
+        await this.page.waitForSelector("#W0085W0002GridContainerTbl");
 
-        const budgetItemsData = JSON.parse(budgetItems);
+        const values = await this.page.evaluate(async () => {
+          const budgetItemsTableHeadElement = document.querySelectorAll(
+            ".Table table#W0085W0002GridContainerTbl thead>tr>th"
+          );
 
-        const budgetItemsHunted: BudgetItemHuntedDTO[] = [];
+          const budgetItemsTableHeadNames = [] as string[];
 
-        budgetItemsData.forEach((budgetItemsArray: BudgetItemHuntedDTO[]) => {
-          let budgetItemsNormalizedData = {} as BudgetItemHuntedDTO;
+          budgetItemsTableHeadElement.forEach((spanElement, index) => {
+            let value;
 
-          budgetItemsArray.forEach((element, index) => {
-            const budgetItemsNormalizedValue = {
-              [budgetItemsTableHeadNames[index]]: element,
-            };
+            if ((spanElement as HTMLElement).innerText.trim() === "") {
+              value = "void";
+            } else {
+              value = (spanElement as HTMLElement).innerText.replace(
+                /[^A-Z0-9]+/gi,
+                ""
+              );
+            }
 
-            budgetItemsNormalizedData = {
-              ...budgetItemsNormalizedData,
-              ...budgetItemsNormalizedValue,
+            budgetItemsTableHeadNames.push(`${value}${index}`);
+          });
+
+          const budgetItems = (
+            document.querySelector(
+              "#W0085W0002GridContainerDataV"
+            ) as HTMLInputElement
+          ).value;
+
+          const budgetItemsData = JSON.parse(budgetItems);
+
+          const budgetItemsHunted: BudgetItemHuntedDTO[] = [];
+
+          budgetItemsData.forEach((budgetItemsArray: BudgetItemHuntedDTO[]) => {
+            let budgetItemsNormalizedData = {} as BudgetItemHuntedDTO;
+
+            budgetItemsArray.forEach((element, index) => {
+              const budgetItemsNormalizedValue = {
+                [budgetItemsTableHeadNames[index]]: element,
+              };
+
+              budgetItemsNormalizedData = {
+                ...budgetItemsNormalizedData,
+                ...budgetItemsNormalizedValue,
+              };
+            });
+
+            budgetItemsHunted.push(budgetItemsNormalizedData);
+          });
+
+          const cardHeaderNames = [
+            "itenscesta",
+            "vendaitens",
+            "valorbruto",
+            "valordesconto",
+            "valorliquido",
+          ];
+
+          const cardsHeaderValue = [] as string[];
+
+          document.querySelectorAll(".huge").forEach((element) => {
+            cardsHeaderValue.push((element as HTMLElement).innerText);
+          });
+
+          let cardAmountRepository = {} as { [key: string]: string };
+
+          cardHeaderNames.forEach((header, index) => {
+            cardAmountRepository = {
+              ...cardAmountRepository,
+              [header]: cardsHeaderValue[index],
             };
           });
 
-          budgetItemsHunted.push(budgetItemsNormalizedData);
+          return { cardAmountRepository, budgetItemsHunted };
         });
 
-        const cardHeader = [
-          "itenscesta",
-          "vendaitens",
-          "valorbruto",
-          "valordesconto",
-          "valorliquido",
-        ];
+        let stillCostHunted: StillCostHuntedDTO[] = [];
+        let attachmentCostHunted: AttachmentCostHuntedDTO[] = [];
+        let glassCostHunted: GlassCostHuntedDTO[] = [];
+        let kitsCostHunted: KitsCostHuntedDTO[] = [];
 
-        const cardsValue = [] as string[];
+        await this.page.waitForTimeout(5000);
 
-        document.querySelectorAll(".huge").forEach((element) => {
-          cardsValue.push((element as HTMLElement).innerText);
+        const linkElementExist = await this.page.evaluate(async () => {
+          const linkElement = document.querySelector(
+            ".panel.panel-green>a"
+          ) as HTMLElement;
+
+          if (linkElement) {
+            return true;
+          }
         });
 
-        let cardAmountRepository = {} as { [key: string]: string };
+        if (linkElementExist) {
+          await this.page.waitForTimeout(5000);
+          await this.page.click(".panel.panel-green>a");
 
-        cardHeader.forEach((header, index) => {
-          cardAmountRepository = {
-            ...cardAmountRepository,
-            [header]: cardsValue[index],
-          };
-        });
-
-        return { cardAmountRepository, budgetItemsHunted };
-      });
-
-      let stillCostHunted: StillCostHuntedDTO[] = [];
-      let attachmentCostHunted: AttachmentCostHuntedDTO[] = [];
-      let glassCostHunted: GlassCostHuntedDTO[] = [];
-      let kitsCostHunted: KitsCostHuntedDTO[] = [];
-
-      await this.page.waitForTimeout(5000);
-
-      const linkElementExist = await this.page.evaluate(async () => {
-        const linkElement = document.querySelector(
-          ".panel.panel-green>a"
-        ) as HTMLElement;
-
-        if (linkElement) {
-          return true;
+          stillCostHunted = await this.getStill();
+          attachmentCostHunted = await this.getAttachment();
+          glassCostHunted = await this.getGlass();
+          kitsCostHunted = await this.getKits();
         }
-      });
 
-      if (linkElementExist) {
-        await this.page.click(".panel.panel-green>a");
+        const budgetsHuntedUpdated = {
+          ...budgetsHunted[index],
+          ...values!.cardAmountRepository,
+          itens: values!.budgetItemsHunted,
+          cost: {
+            still: stillCostHunted,
+            attachment: attachmentCostHunted,
+            glass: glassCostHunted,
+            kits: kitsCostHunted,
+          },
+        };
 
-        stillCostHunted = await this.getStill();
-        attachmentCostHunted = await this.getAttachment();
-        glassCostHunted = await this.getGlass();
-        kitsCostHunted = await this.getKits();
+        await this.budgetsHuntedInMemoryRepository.update(budgetsHuntedUpdated);
+
+        console.log(
+          `
+          Still Cost: ${stillCostHunted.length},
+          Attachment Cost: ${attachmentCostHunted.length},
+          Glass Cost: ${glassCostHunted.length},
+          Kits Cost: ${kitsCostHunted.length}
+          Updated new hunting on budget ${budgetsHunted[index].NroOrc} in database ✔
+          `
+        );
+      } catch (error) {
+        console.log(`
+          Error on budget ${budgetsHunted[index].NroOrc},
+          Error: ${error}
+        `);
       }
-
-      const budgetsHuntedUpdated = {
-        ...budgetsHunted[index],
-        ...values!.cardAmountRepository,
-        itens: values!.budgetItemsHunted,
-        cost: {
-          still: stillCostHunted,
-          attachment: attachmentCostHunted,
-          glass: glassCostHunted,
-          kits: kitsCostHunted,
-        },
-      };
-
-      await this.budgetsHuntedInMemoryRepository.update(budgetsHuntedUpdated);
-
-      console.log(
-        `
-        Still Cost: ${stillCostHunted.length},
-        Attachment Cost: ${attachmentCostHunted.length},
-        Glass Cost: ${glassCostHunted.length},
-        Kits Cost: ${kitsCostHunted.length}
-        Updated new hunting on budget ${budgetsHunted[index].NroOrc} in database ✔
-        `
-      );
     }
 
     budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
 
     createJsonFile("budgets", budgetsHunted);
+  }
+
+  public async getLooseItems(): Promise<LooseItemsHuntedDTO[]> {
+    //get loose items
+
+    const looseItemsHeaderNames = await this.page.evaluate(async () => {
+      const tableHeaderNames = document.querySelectorAll(
+        "#W0085GridContainerTbl thead>tr>th"
+      );
+
+      const headNamesValues: string[] = [];
+      let index = 0;
+      for (const headName of tableHeaderNames) {
+        index++;
+        if (headName.innerText.trim() === "") {
+          headNamesValues.push(`void${index}`);
+        } else {
+          headNamesValues.push(
+            `${headName.innerText.replace(/[^A-Z0-9]+/gi, "")}${index}`
+          );
+        }
+      }
+
+      return headNamesValues;
+    });
+
+    const looseItemsRowData = await this.page.evaluate(async () => {
+      const tableBodyRowElements = document.querySelectorAll(
+        "#W0085GridContainerTbl tbody>tr"
+      );
+
+      const tableBodyData: string[][] = [];
+
+      for (const tableBodyRowElement of tableBodyRowElements) {
+        const collumnsElements = tableBodyRowElement.querySelectorAll("td");
+        const collumnData = [];
+        for (const collumnElement of collumnsElements) {
+          collumnData.push(collumnElement.innerText);
+        }
+        tableBodyData.push(collumnData);
+      }
+
+      return tableBodyData;
+    });
+
+    const looseItemsRepository = unionDataHunted<LooseItemsHuntedDTO>(
+      looseItemsHeaderNames,
+      looseItemsRowData
+    );
+
+    return looseItemsRepository;
   }
 
   public async getStill(): Promise<StillCostHuntedDTO[]> {
@@ -534,7 +598,7 @@ export class BudgetHunter {
       });
 
       // eslint-disable-next-line prettier/prettier
-      if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
+      if ((paginationLenght > 1) && (index <= (paginationLenght - 1))) {
         await this.page.waitForTimeout(5000);
         await this.page.click(
           "#W0054GRIDPAGINATIONBARContainer_DVPaginationBar .next"
@@ -652,7 +716,7 @@ export class BudgetHunter {
       });
 
       // eslint-disable-next-line prettier/prettier
-      if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
+      if ((paginationLenght > 1) && (index <= (paginationLenght - 1))) {
         await this.page.waitForTimeout(5000);
         await this.page.click(
           "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .next"
@@ -770,7 +834,7 @@ export class BudgetHunter {
       });
 
       // eslint-disable-next-line prettier/prettier
-      if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
+      if ((paginationLenght > 1) && (index <= (paginationLenght - 1))) {
         await this.page.waitForTimeout(5000);
         await this.page.click(
           "#W0070GRIDPAGINATIONBARContainer_DVPaginationBar .next"
@@ -890,7 +954,7 @@ export class BudgetHunter {
       });
 
       // eslint-disable-next-line prettier/prettier
-      if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
+      if ((paginationLenght > 1) && (index <= (paginationLenght - 1))) {
         await this.page.waitForTimeout(5000);
         await this.page.click(
           "#W0078GRIDPAGINATIONBARContainer_DVPaginationBar .next"
@@ -1030,12 +1094,11 @@ export class BudgetHunter {
       console.log(`
         ${index + 1} of ${paginationLenght}
         Getting ${productStock.length} product stock...,
-        Content: ${JSON.stringify(productStock, null, 2)}
       `);
 
       // eslint-disable-next-line prettier/prettier
-      if ((paginationLenght > 1) && (index < (paginationLenght - 1))) {
-        await this.page.waitForTimeout(5000);
+      if ((paginationLenght > 1) && (index <= (paginationLenght - 1))) {
+        await this.page.waitForTimeout(2000);
         await this.page.click(
           "#GRIDPAGINATIONBARContainer_DVPaginationBar .next"
         );

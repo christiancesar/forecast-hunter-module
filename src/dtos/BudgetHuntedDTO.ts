@@ -82,5 +82,5 @@ export type BudgetHuntedDTO = {
     attachment: AttachmentCostHuntedDTO[];
     kits: KitsCostHuntedDTO[];
   };
-  itens: BudgetItemHuntedDTO[];
+  items: BudgetItemHuntedDTO[];
 };

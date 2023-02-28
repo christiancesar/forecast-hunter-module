@@ -15,10 +15,9 @@ import { ProductStockHuntedDTO } from "./dtos/ProductStockHuntedDTO";
     url,
   });
   await budgetHunter.load();
-  await budgetHunter.getBudgets();
-  await budgetHunter.getBudgetItems();
-  // const productStockHunted = await budgetHunter.getProductStock();
-  // createJsonFile("product_stock", productStockHunted);
+  // await budgetHunter.getBudgets();
+  // await budgetHunter.getBudgetItems();
+
   // const budgetsHuntedFile = fs.readFileSync("budgets.json", {
   //   encoding: "utf8",
   // });
@@ -26,15 +25,19 @@ import { ProductStockHuntedDTO } from "./dtos/ProductStockHuntedDTO";
   // const budgetsNormalize = budgetsHunted.map((budget: any) => {
   //   return BudgetHuntedMapper.toDomain(budget);
   // });
-  // createJsonFile("budgetsNormalize", budgetsNormalize);
-  // const producStockFile = fs.readFileSync("product_stock.json", {
-  //   encoding: "utf8",
-  // });
-  // const producStock = JSON.parse(producStockFile);
-  // const producStockNormalized = producStock.map(
-  //   (productStock: ProductStockHuntedDTO) => {
-  //     return ProductStockHuntedMapper.toDomain(productStock);
-  //   }
-  // );
-  // createJsonFile("product_stock_normalized", producStockNormalized);
+  // createJsonFile("budgets_normalize", budgetsNormalize);
+
+  const productStockHunted = await budgetHunter.getProductStock();
+  createJsonFile("product_stock", productStockHunted);
+
+  const producStockFile = fs.readFileSync("product_stock.json", {
+    encoding: "utf8",
+  });
+  const producStock = JSON.parse(producStockFile);
+  const producStockNormalized = producStock.map(
+    (productStock: ProductStockHuntedDTO) => {
+      return ProductStockHuntedMapper.toDomain(productStock);
+    }
+  );
+  createJsonFile("product_stock_normalized", producStockNormalized);
 })();

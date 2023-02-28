@@ -4,8 +4,8 @@ import { KitsDTO } from "./KitsDTO";
 import { StillDTO } from "./StillDTO";
 
 export type CostDTO = {
-  still: StillDTO[];
-  attachment: AttachmentDTO[];
-  glass: GlassDTO[];
-  kits: KitsDTO[];
+  still?: StillDTO[];
+  attachment?: AttachmentDTO[];
+  glass?: GlassDTO[];
+  kits?: KitsDTO[];
 };

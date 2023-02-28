@@ -13,14 +13,26 @@ class BudgetItemsStillHuntedMapper {
       weight: amountStringToNumber(stillCostHunted.Peso),
       linear_meter: amountStringToNumber(stillCostHunted.ML),
       per_kg_per_lm_amount: amountStringToNumber(stillCostHunted.CUSTOKGML),
-      cost_amount: amountStringToNumber(stillCostHunted.VlrCusto),
+      cost_amount: amountStringToNumber(
+        stillCostHunted.VlrCusto
+          ? stillCostHunted.VlrCusto
+          : stillCostHunted.VLRCUSTO
+      ),
       sale_amount: amountStringToNumber(stillCostHunted.VLRVENDA),
 
-      processing_amount: amountStringToNumber(stillCostHunted.VlrTrat),
+      processing_amount: amountStringToNumber(
+        stillCostHunted.VlrTrat
+          ? stillCostHunted.VlrTrat
+          : stillCostHunted.VLRTRAT
+      ),
       cost_processing_amount: amountStringToNumber(
         stillCostHunted.VlrCustoTrat
       ),
-      diff_amount: amountStringToNumber(stillCostHunted.Diferena),
+      diff_amount: amountStringToNumber(
+        stillCostHunted.Diferena
+          ? stillCostHunted.Diferena
+          : stillCostHunted.DIFERENA
+      ),
 
       remnant_linear_meter: amountStringToNumber(stillCostHunted.MLSobra),
       waste_linear_meter: amountStringToNumber(stillCostHunted.MLSucata),

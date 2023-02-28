@@ -1,8 +1,9 @@
 import { amountStringToNumber } from "@shared/helpers/amountStringToNumber";
+import { KitsDTO } from "src/dtos/domain/KitsDTO";
 import { KitsCostHuntedDTO } from "src/dtos/KitsCostHuntedDTO";
 
 class BudgetItemsKitsHuntedMapper {
-  toDomain(budgetItemsKitsHunted: KitsCostHuntedDTO) {
+  toDomain(budgetItemsKitsHunted: KitsCostHuntedDTO): KitsDTO {
     return {
       code: budgetItemsKitsHunted.CDIGO,
       // internal_code: budgetItemsKitsHunted.SEUCDIGO,

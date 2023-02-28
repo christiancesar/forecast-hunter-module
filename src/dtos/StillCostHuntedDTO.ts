@@ -9,9 +9,12 @@ export type StillCostHuntedDTO = {
   ML: string;
   CUSTOKGML: string;
   VlrCusto: string;
+  VLRCUSTO: string;
   VLRVENDA: string;
   Diferena: string;
+  DIFERENA: string;
   VlrTrat: string;
+  VLRTRAT: string;
   MLSobra: string;
   MLSucata: string;
   PesoSobra: string;

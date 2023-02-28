@@ -1,14 +1,12 @@
-import { BudgetHuntedDTO } from "../../../dtos/BudgetHuntedDTO";
-import { dateStringToDate } from "@shared/helpers/dateStringToDate";
 import { amountStringToNumber } from "@shared/helpers/amountStringToNumber";
-import BudgetItemsHunterMapper from "./BudgetItemsHuntedMapper";
-import BudgetItemsStillHuntedMapper from "./BudgetItemsStillHuntedMapper";
+import { dateStringToDate } from "@shared/helpers/dateStringToDate";
+import { BudgetDTO } from "src/dtos/domain/BudgetDTO";
+import { BudgetHuntedDTO } from "../../../dtos/BudgetHuntedDTO";
 import BudgetItemsAttchmentHunted from "./BudgetItemsAttchmentHuntedMapper";
 import BudgetItemsGlassHuntedMapper from "./BudgetItemsGlassHuntedMapper";
+import BudgetItemsHunterMapper from "./BudgetItemsHuntedMapper";
 import BudgetItemsKitsHuntedMapper from "./BudgetItemsKitsHuntedMapper";
-import { BudgetItemsDTO } from "src/dtos/domain/BudgetItemsDTO";
-import { StillDTO } from "src/dtos/domain/StillDTO";
-import { BudgetDTO } from "src/dtos/domain/BudgetDTO";
+import BudgetItemsStillHuntedMapper from "./BudgetItemsStillHuntedMapper";
 
 export const statusBudget = {
   ORÇAMENTO: "budget",
@@ -20,23 +18,37 @@ export const statusBudget = {
 
 class BudgetHuntedMapper {
   toDomain(budget: BudgetHuntedDTO): BudgetDTO {
-    const customerPhones = [budget.Fone, budget.Fone2, budget.Celular];
+    const phones = [budget.Fone, budget.Fone2, budget.Celular].filter(
+      (phone) => {
+        if (phone.trim() !== "") {
+          return phone;
+        }
+      }
+    );
 
-    const items = budget.itens.map((item) => {
+    const items = budget.items?.map((item) => {
       return BudgetItemsHunterMapper.toDomain(item);
     });
 
     const costs = {
-      still: budget.cost.still.map((stillCost) => {
+      still: budget.cost?.still?.map((stillCost) => {
         return BudgetItemsStillHuntedMapper.toDomain(stillCost);
+        // try {
+        //   return BudgetItemsStillHuntedMapper.toDomain(stillCost);
+        // } catch (error) {
+        //   console.log(`
+        //     Error on ${budget.NroOrc},
+        //     Still: ${JSON.stringify(stillCost, null, 2)}
+        //   `);
+        // }
       }),
-      attachment: budget.cost.attachment.map((attachmentCost) => {
+      attachment: budget.cost?.attachment?.map((attachmentCost) => {
         return BudgetItemsAttchmentHunted.toDomain(attachmentCost);
       }),
-      glass: budget.cost.glass.map((glassCost) => {
+      glass: budget.cost?.glass?.map((glassCost) => {
         return BudgetItemsGlassHuntedMapper.toDomain(glassCost);
       }),
-      kits: budget.cost.kits.map((kitCost) => {
+      kits: budget.cost?.kits?.map((kitCost) => {
         return BudgetItemsKitsHuntedMapper.toDomain(kitCost);
       }),
     };
@@ -46,11 +58,7 @@ class BudgetHuntedMapper {
       license: Number(budget.Licena),
       customer: {
         name: budget.NomeRazoSocial,
-        phones: customerPhones.filter((phone) => {
-          if (phone.trim() !== "") {
-            return phone;
-          }
-        }),
+        phones,
         email: budget.Email,
         address: {
           street: budget.Endereco,
