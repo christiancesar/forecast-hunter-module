@@ -2,6 +2,7 @@ export type StillCostHuntedDTO = {
   Id: string;
   CDIGO: string;
   SEUCDIGO: string;
+  NOME: string;
   Nome: string;
   COR: string;
   PESO: string;

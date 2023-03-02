@@ -1,3 +1,4 @@
+import path from "node:path";
 import { BudgetHunter } from "./services/BudgetHunter";
 import "dotenv/config";
 import fs from "fs";
@@ -10,25 +11,28 @@ import { ProductStockDTO } from "./dtos/domain/ProductStockDTO";
 import { BudgetDTO } from "./dtos/domain/BudgetDTO";
 
 (async () => {
-  // const url = "https://sistema.wvetro.com.br/wvetro/app.wvetro.login";
-  // const budgetHunter = new BudgetHunter({
-  //   user: process.env.WVETRO_USER,
-  //   password: process.env.WVETRO_PASSWORD,
-  //   license: process.env.WVETRO_LICENSE,
-  //   url,
-  // });
-  // await budgetHunter.load();
+  const url = "https://sistema.wvetro.com.br/wvetro/app.wvetro.login";
+  const budgetHunter = new BudgetHunter({
+    user: process.env.WVETRO_USER,
+    password: process.env.WVETRO_PASSWORD,
+    license: process.env.WVETRO_LICENSE,
+    url,
+  });
+  await budgetHunter.load();
   // await budgetHunter.getBudgets();
   // await budgetHunter.getBudgetItems();
 
-  // const budgetsHuntedFile = fs.readFileSync("budgets.json", {
-  //   encoding: "utf8",
-  // });
+  // const budgetsHuntedFile = fs.readFileSync(
+  //   path.resolve("src", "files", "repositories", "budgets.json"),
+  //   {
+  //     encoding: "utf8",
+  //   }
+  // );
   // const budgetsHunted = JSON.parse(budgetsHuntedFile);
-  // const budgetsNormalize = budgetsHunted.map((budget: any) => {
+  // const budgetsNormalized = budgetsHunted.map((budget: any) => {
   //   return BudgetHuntedMapper.toDomain(budget);
   // });
-  // createJsonFile("budgets_normalize", budgetsNormalize);
+  // createJsonFile("budgets_normalized", budgetsNormalized);
 
   // const productStockHunted = await budgetHunter.getProductStock();
   // createJsonFile("product_stock", productStockHunted);
@@ -46,15 +50,26 @@ import { BudgetDTO } from "./dtos/domain/BudgetDTO";
 
   const mrpService = new ManufacturingResourcePlanning();
   const budgets = JSON.parse(
-    fs.readFileSync("budgets_normalize.json", {
-      encoding: "utf8",
-    })
+    fs.readFileSync(
+      path.resolve("src", "files", "repositories", "budgets_normalized.json"),
+      {
+        encoding: "utf8",
+      }
+    )
   ) as BudgetDTO[];
 
   const productStock = JSON.parse(
-    fs.readFileSync("product_stock_normalized.json", {
-      encoding: "utf8",
-    })
+    fs.readFileSync(
+      path.resolve(
+        "src",
+        "files",
+        "repositories",
+        "product_stock_normalized.json"
+      ),
+      {
+        encoding: "utf8",
+      }
+    )
   ) as ProductStockDTO[];
 
   mrpService.execute({

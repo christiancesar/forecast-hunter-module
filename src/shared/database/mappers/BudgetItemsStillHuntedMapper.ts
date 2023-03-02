@@ -7,7 +7,9 @@ class BudgetItemsStillHuntedMapper {
     return {
       code: stillCostHunted.CDIGO,
       internal_code: stillCostHunted.SEUCDIGO,
-      description: stillCostHunted.Nome,
+      description: stillCostHunted.NOME
+        ? stillCostHunted.NOME
+        : stillCostHunted.Nome,
       color: stillCostHunted.COR,
       quantity: amountStringToNumber(stillCostHunted.QTBARRAS),
       weight: amountStringToNumber(stillCostHunted.Peso),
