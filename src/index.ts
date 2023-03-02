@@ -19,8 +19,8 @@ import { BudgetDTO } from "./dtos/domain/BudgetDTO";
     url,
   });
   await budgetHunter.load();
-  // await budgetHunter.getBudgets();
-  // await budgetHunter.getBudgetItems();
+  await budgetHunter.getBudgets();
+  await budgetHunter.getBudgetItems();
 
   // const budgetsHuntedFile = fs.readFileSync(
   //   path.resolve("src", "files", "repositories", "budgets.json"),
