@@ -22,17 +22,17 @@ import { BudgetDTO } from "./dtos/domain/BudgetDTO";
   await budgetHunter.getBudgets();
   await budgetHunter.getBudgetItems();
 
-  const budgetsHuntedFile = fs.readFileSync(
-    path.resolve("src", "files", "repositories", "budgets.json"),
-    {
-      encoding: "utf8",
-    }
-  );
-  const budgetsHunted = JSON.parse(budgetsHuntedFile);
-  const budgetsNormalized = budgetsHunted.map((budget: any) => {
-    return BudgetHuntedMapper.toDomain(budget);
-  });
-  createJsonFile("budgets_normalized", budgetsNormalized);
+  // const budgetsHuntedFile = fs.readFileSync(
+  //   path.resolve("src", "files", "repositories", "budgets.json"),
+  //   {
+  //     encoding: "utf8",
+  //   }
+  // );
+  // const budgetsHunted = JSON.parse(budgetsHuntedFile);
+  // const budgetsNormalized = budgetsHunted.map((budget: any) => {
+  //   return BudgetHuntedMapper.toDomain(budget);
+  // });
+  // createJsonFile("budgets_normalized", budgetsNormalized);
 
   // const productStockHunted = await budgetHunter.getProductStock();
   // createJsonFile("product_stock", productStockHunted);
@@ -48,32 +48,32 @@ import { BudgetDTO } from "./dtos/domain/BudgetDTO";
   // );
   // createJsonFile("product_stock_normalized", producStockNormalized);
 
-  const mrpService = new ManufacturingResourcePlanning();
-  const budgets = JSON.parse(
-    fs.readFileSync(
-      path.resolve("src", "files", "repositories", "budgets_normalized.json"),
-      {
-        encoding: "utf8",
-      }
-    )
-  ) as BudgetDTO[];
+  // const mrpService = new ManufacturingResourcePlanning();
+  // const budgets = JSON.parse(
+  //   fs.readFileSync(
+  //     path.resolve("src", "files", "repositories", "budgets_normalized.json"),
+  //     {
+  //       encoding: "utf8",
+  //     }
+  //   )
+  // ) as BudgetDTO[];
 
-  const productStock = JSON.parse(
-    fs.readFileSync(
-      path.resolve(
-        "src",
-        "files",
-        "repositories",
-        "product_stock_normalized.json"
-      ),
-      {
-        encoding: "utf8",
-      }
-    )
-  ) as ProductStockDTO[];
+  // const productStock = JSON.parse(
+  //   fs.readFileSync(
+  //     path.resolve(
+  //       "src",
+  //       "files",
+  //       "repositories",
+  //       "product_stock_normalized.json"
+  //     ),
+  //     {
+  //       encoding: "utf8",
+  //     }
+  //   )
+  // ) as ProductStockDTO[];
 
-  mrpService.execute({
-    budgets,
-    productStock,
-  });
+  // mrpService.execute({
+  //   budgets,
+  //   productStock,
+  // });
 })();

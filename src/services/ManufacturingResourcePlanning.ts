@@ -9,16 +9,6 @@ type ManufacturingResourcePlanningParams = {
   productStock: ProductStockDTO[];
 };
 
-type StillGroup = {
-  [key: string]: StillDTO[];
-};
-
-type StillCount = {
-  [key: string]: {
-    [key: string]: number;
-  };
-};
-
 type StillClassified = {
   code: string;
   description: string;
@@ -101,23 +91,51 @@ export class ManufacturingResourcePlanning {
       return stock.type_prodct === "Perfil";
     });
 
-    for (const stock of producStockFiltered) {
-      const stillClassifiedIndex = stillClassified.findIndex((still) => {
+    for (const still of stillClassified) {
+      const stock = producStockFiltered.find((stock) => {
         // eslint-disable-next-line prettier/prettier
-        if ((still.code === stock.code) && (still.color === stock.color)) {
-          return still;
+        if ((stock.code === still.code) && (stock.color === still.color)) {
+          return stock;
         }
       });
 
-      if (stillClassifiedIndex !== -1) {
-        const stock_need =
-          stillClassified[stillClassifiedIndex].quantity - stock.quantity;
+      if (stock) {
+        const mrp = stock.quantity - still.quantity;
 
-        stillClassified[stillClassifiedIndex].stock = stock.quantity;
-        stillClassified[stillClassifiedIndex].mrp =
-          stock_need < 0 ? 0 : stock_need;
+        // eslint-disable-next-line prettier/prettier
+        const mrp_need = (mrp < 0) ? Math.abs(mrp) : 0;
+
+        still.stock = stock.quantity;
+        still.mrp = mrp_need;
+      } else {
+        still.stock = 0;
+        still.mrp = still.quantity;
       }
     }
+
+    // for (const stock of producStockFiltered) {
+    //   const stillClassifiedIndex = stillClassified.findIndex((still) => {
+    //     // eslint-disable-next-line prettier/prettier
+    //     if ((still.code === stock.code) && (still.color === stock.color)) {
+    //       return still;
+    //     }
+    //   });
+
+    //   if (stillClassifiedIndex !== -1) {
+    //     const mrp =
+    //       stock.quantity - stillClassified[stillClassifiedIndex].quantity;
+
+    //     // eslint-disable-next-line prettier/prettier
+    //     const mrp_need = (mrp < 0) ? Math.abs(mrp) : 0;
+
+    //     stillClassified[stillClassifiedIndex].stock = stock.quantity;
+    //     stillClassified[stillClassifiedIndex].mrp = mrp_need;
+    //   } else {
+    //     stillClassified[stillClassifiedIndex].stock = 0;
+    //     stillClassified[stillClassifiedIndex].mrp =
+    //       stillClassified[stillClassifiedIndex].quantity;
+    //   }
+    // }
 
     createJsonFile(
       "stillClassified",

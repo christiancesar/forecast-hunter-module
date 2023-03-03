@@ -91,7 +91,7 @@ export class BudgetHunter {
     await this.page.waitForSelector("#btn_orcamentoview");
     await this.page.click("#btn_orcamentoview");
 
-    await this.page.waitForTimeout(5000);
+    await this.page.waitForTimeout(3000);
 
     await this.page.evaluate(() => {
       //Change status to "Faturado"
@@ -114,7 +114,7 @@ export class BudgetHunter {
     });
 
     // get pages number
-    await this.page.waitForTimeout(5000);
+    await this.page.waitForTimeout(3000);
 
     const paginationLenght = await this.page.evaluate(async () => {
       function navegatedOnFirstPage() {
@@ -157,7 +157,7 @@ export class BudgetHunter {
 
     // paginationLenght = paginationLenghtDev;
 
-    for (let index = 0; index < paginationLenght; index++) {
+    for (let index = 0; index < 1; index++) {
       // get budgets in table and normalize data
       let budgets: BudgetHuntedDTO[] = [];
 
@@ -264,8 +264,8 @@ export class BudgetHunter {
       `);
 
       // eslint-disable-next-line prettier/prettier
-      if ((paginationLenght > 1) && (index <= (paginationLenght - 1))) {
-        await this.page.waitForTimeout(5000);
+      if (index <= (paginationLenght - 1)) {
+        await this.page.waitForTimeout(3000);
         await this.page.click(
           "#GRIDPAGINATIONBARContainer_DVPaginationBar .next"
         );
@@ -385,7 +385,7 @@ export class BudgetHunter {
         let glassCostHunted: GlassCostHuntedDTO[] = [];
         let kitsCostHunted: KitsCostHuntedDTO[] = [];
 
-        await this.page.waitForTimeout(5000);
+        await this.page.waitForTimeout(3000);
 
         const linkElementExist = await this.page.evaluate(async () => {
           const linkElement = document.querySelector(
@@ -398,7 +398,7 @@ export class BudgetHunter {
         });
 
         if (linkElementExist) {
-          await this.page.waitForTimeout(5000);
+          await this.page.waitForTimeout(3000);
           await this.page.click(".panel.panel-green>a");
 
           stillCostHunted = await this.getStill();
@@ -505,7 +505,7 @@ export class BudgetHunter {
 
     await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel2");
 
-    await this.page.waitForTimeout(5000);
+    await this.page.waitForTimeout(3000);
 
     const stillHeaderNames = await this.page.evaluate(async () => {
       function getHeaderNames(selector: string): string[] {
@@ -572,6 +572,7 @@ export class BudgetHunter {
     const stillRowsData: string[][] = [];
 
     for (let index = 0; index < paginationLenght; index++) {
+      await this.page.waitForTimeout(3000);
       const stillRowsValues = await this.page.evaluate(async () => {
         function getDataTable(selector: string): string[][] {
           const rowsElements = document.querySelectorAll(selector);
@@ -598,8 +599,8 @@ export class BudgetHunter {
       });
 
       // eslint-disable-next-line prettier/prettier
-      if ((paginationLenght > 1) && (index <= (paginationLenght - 1))) {
-        await this.page.waitForTimeout(5000);
+      if (index <= (paginationLenght - 1)) {
+        await this.page.waitForTimeout(3000);
         await this.page.click(
           "#W0054GRIDPAGINATIONBARContainer_DVPaginationBar .next"
         );
@@ -623,7 +624,7 @@ export class BudgetHunter {
 
     await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel3");
 
-    await this.page.waitForTimeout(5000);
+    await this.page.waitForTimeout(3000);
 
     const attachmentHeaderNames = await this.page.evaluate(async () => {
       function getHeaderNames(selector: string): string[] {
@@ -686,6 +687,7 @@ export class BudgetHunter {
         "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .btn.btn-primary.dropdown-toggle"
       );
     });
+    await this.page.waitForTimeout(3000);
 
     const attachmentRowsData: string[][] = [];
 
@@ -716,8 +718,8 @@ export class BudgetHunter {
       });
 
       // eslint-disable-next-line prettier/prettier
-      if ((paginationLenght > 1) && (index <= (paginationLenght - 1))) {
-        await this.page.waitForTimeout(5000);
+      if (index <= (paginationLenght - 1)) {
+        await this.page.waitForTimeout(3000);
         await this.page.click(
           "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .next"
         );
@@ -741,7 +743,7 @@ export class BudgetHunter {
 
     await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel4");
 
-    await this.page.waitForTimeout(5000);
+    await this.page.waitForTimeout(3000);
 
     const glassHeaderNames = await this.page.evaluate(async () => {
       function getHeaderNames(selector: string): string[] {
@@ -804,6 +806,7 @@ export class BudgetHunter {
         "#W0070GRIDPAGINATIONBARContainer_DVPaginationBar .btn.btn-primary.dropdown-toggle"
       );
     });
+    await this.page.waitForTimeout(3000);
 
     const glassRowsData: string[][] = [];
 
@@ -834,8 +837,8 @@ export class BudgetHunter {
       });
 
       // eslint-disable-next-line prettier/prettier
-      if ((paginationLenght > 1) && (index <= (paginationLenght - 1))) {
-        await this.page.waitForTimeout(5000);
+      if (index <= (paginationLenght - 1)) {
+        await this.page.waitForTimeout(3000);
         await this.page.click(
           "#W0070GRIDPAGINATIONBARContainer_DVPaginationBar .next"
         );
@@ -861,7 +864,7 @@ export class BudgetHunter {
     );
     await this.page.click("#Tab_GXUITABSPANEL_TABPRINCIPALContainerpanel5");
 
-    await this.page.waitForTimeout(5000);
+    await this.page.waitForTimeout(3000);
 
     const kitsHeaderNames = await this.page.evaluate(async () => {
       function getHeaderNames(selector: string): string[] {
@@ -925,6 +928,8 @@ export class BudgetHunter {
       );
     });
 
+    await this.page.waitForTimeout(3000);
+
     const kitsRowsData: string[][] = [];
 
     for (let index = 0; index < paginationLenght; index++) {
@@ -954,8 +959,8 @@ export class BudgetHunter {
       });
 
       // eslint-disable-next-line prettier/prettier
-      if ((paginationLenght > 1) && (index <= (paginationLenght - 1))) {
-        await this.page.waitForTimeout(5000);
+      if (index <= (paginationLenght - 1)) {
+        await this.page.waitForTimeout(3000);
         await this.page.click(
           "#W0078GRIDPAGINATIONBARContainer_DVPaginationBar .next"
         );
@@ -1097,7 +1102,7 @@ export class BudgetHunter {
       `);
 
       // eslint-disable-next-line prettier/prettier
-      if ((paginationLenght > 1) && (index <= (paginationLenght - 1))) {
+      if (index <= (paginationLenght - 1)) {
         await this.page.waitForTimeout(2000);
         await this.page.click(
           "#GRIDPAGINATIONBARContainer_DVPaginationBar .next"
