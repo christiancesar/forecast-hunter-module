@@ -22,17 +22,17 @@ import { BudgetDTO } from "./dtos/domain/BudgetDTO";
   await budgetHunter.getBudgets();
   await budgetHunter.getBudgetItems();
 
-  // const budgetsHuntedFile = fs.readFileSync(
-  //   path.resolve("src", "files", "repositories", "budgets.json"),
-  //   {
-  //     encoding: "utf8",
-  //   }
-  // );
-  // const budgetsHunted = JSON.parse(budgetsHuntedFile);
-  // const budgetsNormalized = budgetsHunted.map((budget: any) => {
-  //   return BudgetHuntedMapper.toDomain(budget);
-  // });
-  // createJsonFile("budgets_normalized", budgetsNormalized);
+  const budgetsHuntedFile = fs.readFileSync(
+    path.resolve("src", "files", "repositories", "budgets.json"),
+    {
+      encoding: "utf8",
+    }
+  );
+  const budgetsHunted = JSON.parse(budgetsHuntedFile);
+  const budgetsNormalized = budgetsHunted.map((budget: any) => {
+    return BudgetHuntedMapper.toDomain(budget);
+  });
+  createJsonFile("budgets_normalized", budgetsNormalized);
 
   // const productStockHunted = await budgetHunter.getProductStock();
   // createJsonFile("product_stock", productStockHunted);
