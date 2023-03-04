@@ -157,7 +157,7 @@ export class BudgetHunter {
 
     // paginationLenght = paginationLenghtDev;
 
-    for (let index = 0; index < 1; index++) {
+    for (let index = 0; index < 5; index++) {
       // get budgets in table and normalize data
       let budgets: BudgetHuntedDTO[] = [];
 

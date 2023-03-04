@@ -14,6 +14,7 @@ type StillClassified = {
   description: string;
   color: string;
   quantity: number;
+  weight: number;
   stock: number;
   mrp: number;
   budgets: {
@@ -46,6 +47,7 @@ export class ManufacturingResourcePlanning {
     // const budgetStill: StillDTO[] = [];
 
     const stillClassified: StillClassified[] = [];
+
     for (const budget of budgetNotCompleted) {
       if (budget.costs?.still?.length) {
         for (const still of budget.costs.still) {
@@ -60,6 +62,7 @@ export class ManufacturingResourcePlanning {
 
           if (stillClassifiedIndex !== -1) {
             stillClassified[stillClassifiedIndex].quantity += still.quantity;
+            stillClassified[stillClassifiedIndex].weight += still.weight;
             stillClassified[stillClassifiedIndex].mrp = 0;
             stillClassified[stillClassifiedIndex].stock = 0;
             stillClassified[stillClassifiedIndex].budgets.push({
@@ -73,6 +76,7 @@ export class ManufacturingResourcePlanning {
               description: still.description,
               color: still.color,
               quantity: still.quantity,
+              weight: still.weight,
               stock: 0,
               mrp: 0,
               budgets: [
@@ -104,7 +108,6 @@ export class ManufacturingResourcePlanning {
 
         // eslint-disable-next-line prettier/prettier
         const mrp_need = (mrp < 0) ? Math.abs(mrp) : 0;
-
         still.stock = stock.quantity;
         still.mrp = mrp_need;
       } else {
