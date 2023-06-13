@@ -104,7 +104,7 @@ export class BudgetHunter {
   }
 
   private async setFilter(filter: SetFilterParams): Promise<void> {
-    console.log("Apply filter...");
+    console.log("Apply filter: ", filter);
 
     await this.page.evaluate((filter) => {
       console.log("filter", filter);
@@ -131,29 +131,27 @@ export class BudgetHunter {
       ) as HTMLInputElement;
 
       if (initialDate) {
-        initialDate.value = filter.initialDate ? filter.initialDate : "";
-        // initialDate.dispatchEvent(new Event("change"));
+        initialDate.value = filter.initialDate ?? "";
 
-        initialDate?.onchange();
+        initialDate.dispatchEvent(new Event("change", { bubbles: true }));
       }
 
       if (finalDate) {
-        finalDate.value = filter.finalDate ? filter.finalDate : "";
-        // finalDate.dispatchEvent(new Event("change"));
+        finalDate.value = filter.finalDate ?? "";
 
-        finalDate?.onchange();
+        finalDate.dispatchEvent(new Event("change", { bubbles: true }));
       }
     }, filter);
   }
 
   public async getBudgets(params: GetBudgetHunterParams): Promise<void> {
     console.log("\n[BUDGET]");
+    await this.page.waitForTimeout(3000);
 
     await this.page.waitForSelector("#btn_orcamentoview");
     await this.page.click("#btn_orcamentoview");
 
     await this.page.waitForTimeout(3000);
-
     await this.setFilter(params.filter);
 
     console.log("Starting to get budgets...");
@@ -323,27 +321,28 @@ export class BudgetHunter {
 
     console.log("Finished to get budgets");
 
-    console.log("Start saving budgets in database...");
+    console.log("Start saving budgets in memory...");
 
     const budgets = await this.budgetsHuntedInMemoryRepository.saveAll(
       budgetsHunted
     );
 
-    console.log(`Saving ${budgets.length} budgets in database...`);
+    console.log(`Saved ${budgets.length} budgets in memory...`);
     console.log(
       "Budgets",
       budgets.map((budget) => budget.NroOrc)
     );
   }
 
-  public async getBudgetItems(): Promise<void> {
+  public async getBudgetItems(): Promise<BudgetHuntedDTO[]> {
     console.log("\n[BUDGET ITEMS]");
     console.log("Start hunting budget items...");
 
     let budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
 
-    /* Verificar no banco de dados e remover os pedidos do Array que já foram capturados.
-       Desta maneira irá capturar apenas os orçamentos necessarios.
+    /*
+      Verificar no banco de dados e remover os pedidos do Array que já foram capturados.
+      Desta maneira irá capturar apenas os orçamentos necessarios.
     */
 
     // const budgetItemsHuntedRepository = [] as BudgetItemHuntedDTO[];
@@ -485,7 +484,8 @@ export class BudgetHunter {
           Still Cost: ${stillCostHunted.length},
           Attachment Cost: ${attachmentCostHunted.length},
           Glass Cost: ${glassCostHunted.length},
-          Kits Cost: ${kitsCostHunted.length}
+          Kits Cost: ${kitsCostHunted.length},
+
           Updated new hunting on budget ${budgetsHunted[index].NroOrc} in database ✔
           `
         );
@@ -500,6 +500,8 @@ export class BudgetHunter {
     budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
 
     createJsonFile("budgets", budgetsHunted);
+
+    return budgetsHunted;
   }
 
   public async getLooseItems(): Promise<LooseItemHuntedDTO[]> {
