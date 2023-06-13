@@ -1,3 +1,4 @@
-export function dateStringToDate(dateString: string): Date | null {
-  return Date.parse(dateString) ? new Date(dateString) : null;
+export function dateStringToDate(dateString: string): Date {
+  const [day, month, year] = dateString.split("/");
+  return new Date(`${year}-${month}-${day}`);
 }

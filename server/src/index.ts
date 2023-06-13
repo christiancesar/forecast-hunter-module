@@ -12,43 +12,44 @@ import { BudgetDTO } from "./dtos/domain/BudgetDTO";
 import { BudgetHuntedNormalizedService } from "./services/BudgetHuntedNormalizedService";
 
 (async () => {
-  const url = "https://sistema.wvetro.com.br/wvetro/app.wvetro.login";
-  const budgetHunter = new BudgetHunter({
-    user: process.env.WVETRO_USER,
-    password: process.env.WVETRO_PASSWORD,
-    license: process.env.WVETRO_LICENSE,
-    url,
-  });
+  // const url = "https://sistema.wvetro.com.br/wvetro/app.wvetro.login";
+  // const budgetHunter = new BudgetHunter({
+  //   user: process.env.WVETRO_USER,
+  //   password: process.env.WVETRO_PASSWORD,
+  //   license: process.env.WVETRO_LICENSE,
+  //   url,
+  // });
 
-  await budgetHunter.load();
-  await budgetHunter.getBudgets({
-    filter: {
-      budgetStatus: "F",
-      finalDate: "",
-      initialDate: "",
-      budgetId: 0,
-    },
-    huntPagesQuantity: 1,
-  });
+  // await budgetHunter.load();
+  // await budgetHunter.getBudgets({
+  //   filter: {
+  //     budgetStatus: "F",
+  //     finalDate: "",
+  //     initialDate: "",
+  //     budgetId: 0,
+  //   },
+  //   huntPagesQuantity: 1,
+  // });
 
-  const budgetsHunted = await budgetHunter.getBudgetItems();
+  // const budgetsHunted = await budgetHunter.getBudgetItems();
+
+  const budgetsHuntedFile = fs.readFileSync(
+    path.resolve("src", "files", "repositories", "budgets.json"),
+    {
+      encoding: "utf8",
+    }
+  );
+  const budgetsHunted = JSON.parse(budgetsHuntedFile);
 
   const budgetHuntedNormalizedService = new BudgetHuntedNormalizedService();
-  const budgetNormalized = await budgetHuntedNormalizedService.execute(
+  const budgetsNormalized = await budgetHuntedNormalizedService.execute(
     budgetsHunted
   );
 
-  // const budgetsHuntedFile = fs.readFileSync(
-  //   path.resolve("src", "files", "repositories", "budgets.json"),
-  //   {
-  //     encoding: "utf8",
-  //   }
-  // );
-  // const budgetsHunted = JSON.parse(budgetsHuntedFile);
   // const budgetsNormalized = budgetsHunted.map((budget: any) => {
   //   return BudgetHuntedMapper.toDomain(budget);
   // });
-  // createJsonFile("budgets_normalized", budgetsNormalized);
+  createJsonFile("budgets_normalized", budgetsNormalized);
 
   // const productStockHunted = await budgetHunter.getProductStock();
   // createJsonFile("product_stock", productStockHunted);

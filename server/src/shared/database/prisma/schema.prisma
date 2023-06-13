@@ -1,0 +1,118 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Address {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  street       String
+  number       Int
+  neighborhood String
+  city         String
+  state        String
+  Customer     Customer[]
+}
+
+model Customer {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  phones    String[]
+  email     String
+  address   Address  @relation(fields: [addressId], references: [id])
+  addressId String   @db.ObjectId
+  Budget    Budget[]
+}
+
+model Item {
+  id                    String  @id @default(auto()) @map("_id") @db.ObjectId
+  order                 Int
+  budget_short_id       Int
+  license               Int
+  description           String
+  quantity              Float
+  unit_amount           Float
+  total_amount          Float
+  total_modified_amount Float
+  modified              Boolean
+  width                 Int
+  height                Int
+  glass                 String
+  Budget                Budget? @relation(fields: [budgetId], references: [id])
+  budgetId              String? @db.ObjectId
+}
+
+model LooseItem {
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  code          String
+  internal_code String
+  description   String
+  color         String
+  width         Int
+  height        Int
+  quantity      Float
+  unit_amount   Float
+  total_amount  Float
+  measurement   String
+  Budget        Budget? @relation(fields: [budgetId], references: [id])
+  budgetId      String? @db.ObjectId
+}
+
+model Still {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  Cost   Cost?   @relation(fields: [costId], references: [id])
+  costId String? @db.ObjectId
+}
+
+model Attachment {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  Cost   Cost?   @relation(fields: [costId], references: [id])
+  costId String? @db.ObjectId
+}
+
+model Glass {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  Cost   Cost?   @relation(fields: [costId], references: [id])
+  costId String? @db.ObjectId
+}
+
+model Kits {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  Cost   Cost?   @relation(fields: [costId], references: [id])
+  costId String? @db.ObjectId
+}
+
+model Cost {
+  id         String       @id @default(auto()) @map("_id") @db.ObjectId
+  still      Still[]
+  attachment Attachment[]
+  glass      Glass[]
+  kits       Kits[]
+  Budget     Budget[]
+}
+
+model Budget {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  shortId         Int         @unique
+  license         Int
+  customer        Customer    @relation(fields: [customerId], references: [id])
+  items           Item[]
+  looseItems      LooseItem[]
+  billedAt        DateTime
+  soldAt          DateTime
+  registeredAt    DateTime
+  amount          Float
+  status_budget   String
+  status_producer String
+  salesman        String
+  costs           Cost?       @relation(fields: [costId], references: [id])
+  captured        Boolean
+  customerId      String      @db.ObjectId
+  costId          String?     @db.ObjectId
+}
