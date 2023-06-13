@@ -11,16 +11,26 @@ import { ProductStockDTO } from "./dtos/domain/ProductStockDTO";
 import { BudgetDTO } from "./dtos/domain/BudgetDTO";
 
 (async () => {
-  const url = "https://sistema.wvetro.com.br/wvetro/app.wvetro.login";
-  const budgetHunter = new BudgetHunter({
-    user: process.env.WVETRO_USER,
-    password: process.env.WVETRO_PASSWORD,
-    license: process.env.WVETRO_LICENSE,
-    url,
-  });
-  await budgetHunter.load();
-  await budgetHunter.getBudgets();
-  await budgetHunter.getBudgetItems();
+  // const url = "https://sistema.wvetro.com.br/wvetro/app.wvetro.login";
+  // const budgetHunter = new BudgetHunter({
+  //   user: process.env.WVETRO_USER,
+  //   password: process.env.WVETRO_PASSWORD,
+  //   license: process.env.WVETRO_LICENSE,
+  //   url,
+  // });
+
+  // await budgetHunter.load();
+  // await budgetHunter.getBudgets({
+  //   filter: {
+  //     budgetStatus: "F",
+  //     finalDate: "",
+  //     initialDate: "",
+  //     budgetId: 0,
+  //   },
+  //   huntPagesQuantity: 1,
+  // });
+
+  // await budgetHunter.getBudgetItems();
 
   const budgetsHuntedFile = fs.readFileSync(
     path.resolve("src", "files", "repositories", "budgets.json"),

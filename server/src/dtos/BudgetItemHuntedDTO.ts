@@ -21,7 +21,7 @@ export type BudgetItemHuntedDTO = {
   AlteradaEstrutura19: string;
   NroOramento20: string;
   Largura21: string;
-  Licenca22: string;
+  Licena22: string;
   Altura23: string;
   Esquadria24: string;
   EsquadriaLinhaId25: string;

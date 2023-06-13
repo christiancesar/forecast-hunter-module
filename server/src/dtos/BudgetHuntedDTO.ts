@@ -2,6 +2,7 @@ import { AttachmentCostHuntedDTO } from "./AttachmentCostHuntedDTO";
 import { BudgetItemHuntedDTO } from "./BudgetItemHuntedDTO";
 import { GlassCostHuntedDTO } from "./GlassCostHuntedDTO";
 import { KitsCostHuntedDTO } from "./KitsCostHuntedDTO";
+import { LooseItemHuntedDTO } from "./LooseItemHuntedDTO";
 import { StillCostHuntedDTO } from "./StillCostHuntedDTO";
 
 export type BudgetHuntedDTO = {
@@ -83,4 +84,6 @@ export type BudgetHuntedDTO = {
     kits: KitsCostHuntedDTO[];
   };
   items: BudgetItemHuntedDTO[];
+  looseItems: LooseItemHuntedDTO[];
+  captured: boolean;
 };

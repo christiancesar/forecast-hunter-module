@@ -7,6 +7,7 @@ import BudgetItemsGlassHuntedMapper from "./BudgetItemsGlassHuntedMapper";
 import BudgetItemsHunterMapper from "./BudgetItemsHuntedMapper";
 import BudgetItemsKitsHuntedMapper from "./BudgetItemsKitsHuntedMapper";
 import BudgetItemsStillHuntedMapper from "./BudgetItemsStillHuntedMapper";
+import BudgetLooseItemsMapper from "./BudgetLooseItemsMapper";
 
 export const statusBudget = {
   ORÇAMENTO: "budget",
@@ -53,6 +54,10 @@ class BudgetHuntedMapper {
       }),
     };
 
+    const looseItems = budget.looseItems?.map((looseItem) => {
+      return BudgetLooseItemsMapper.toDomain(looseItem);
+    });
+
     return {
       shortId: Number(budget.NroOrc),
       license: Number(budget.Licena),
@@ -68,6 +73,7 @@ class BudgetHuntedMapper {
           state: budget.UF,
         },
       },
+      looseItems,
       items,
       billedAt: dateStringToDate(budget.DtFatur),
       soldAt: dateStringToDate(budget.DtVenda),
@@ -77,6 +83,7 @@ class BudgetHuntedMapper {
       status_producer: budget.EstagioProduo,
       salesman: budget.Vendedor,
       costs,
+      captured: budget.captured,
     };
   }
 }

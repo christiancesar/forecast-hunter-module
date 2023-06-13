@@ -12,7 +12,7 @@ import { StillCostHuntedDTO } from "src/dtos/StillCostHuntedDTO";
 import { BudgetHuntedDTO } from "../dtos/BudgetHuntedDTO";
 import { BudgetItemHuntedDTO } from "../dtos/BudgetItemHuntedDTO";
 import { createJsonFile } from "../shared/helpers/createJsonFile";
-import { LooseItemsHuntedDTO } from "src/dtos/LooseItemsHuntedDTO";
+import { LooseItemHuntedDTO } from "src/dtos/LooseItemHuntedDTO";
 
 type BudgetHunterParams = {
   user: string | undefined;
@@ -20,8 +20,27 @@ type BudgetHunterParams = {
   license: string | undefined;
   url: string;
 };
+// <>
+// <select id="vORCAMENTOSITUACAO" name = "vORCAMENTOSITUACAO" class="Attribute250 form-control" data - gxoch0="if(!(gx.evt.jsEvent(this))) return false;" onfocus = "gx.evt.onfocus(this, 48,'',false,'0001',0)" onchange = ";gx.evt.onchange(this, event)" onblur = ";gx.evt.onblur(this,48);" data - gx - tpl - applied - atts - vars="" >
+//   <option value="" selected = "selected" > Todos < /option>
+//   <option value="O">ORÇAMENTO</option >
+//   <option value="A" > AGENDADO < /option>
+//   <option value="V">VENDA</option >
+//   <option value="F" > FATURADO < /option>
+//   <option value="C">CANCELADO</option >
+// </select>
+// </>
 
-const paginationLenghtDev = 1;
+type SetFilterParams = {
+  initialDate: string;
+  finalDate: string;
+  budgetStatus: string;
+  budgetId: number;
+};
+type GetBudgetHunterParams = {
+  filter: SetFilterParams;
+  huntPagesQuantity: number;
+};
 
 export class BudgetHunter {
   private user: string | undefined;
@@ -84,20 +103,25 @@ export class BudgetHunter {
     // );
   }
 
-  public async getBudgets(): Promise<void> {
-    console.log("\n[BUDGET]");
-    console.log("Starting to get budgets...");
+  private async setFilter(filter: SetFilterParams): Promise<void> {
+    console.log("Apply filter...");
 
-    await this.page.waitForSelector("#btn_orcamentoview");
-    await this.page.click("#btn_orcamentoview");
+    await this.page.evaluate((filter) => {
+      console.log("filter", filter);
 
-    await this.page.waitForTimeout(3000);
+      if (filter.budgetId !== 0) {
+        (
+          document.querySelector(
+            "#TABLEDYNAMICFILTERS input"
+          ) as HTMLInputElement
+        ).value = filter.budgetId.toString();
+      }
 
-    await this.page.evaluate(() => {
       //Change status to "Faturado"
       (
         document.querySelector("#vORCAMENTOSITUACAO") as HTMLSelectElement
-      ).value = "F";
+      ).value = filter.budgetStatus;
+
       //Input data de cadastro
       const initialDate = document.querySelector(
         "#vORCAMENTODATACADASTRO"
@@ -106,17 +130,37 @@ export class BudgetHunter {
         "#vORCAMENTODATACADASTRO_TO"
       ) as HTMLInputElement;
 
-      initialDate.value = "";
-      initialDate?.onchange();
+      if (initialDate) {
+        initialDate.value = filter.initialDate ? filter.initialDate : "";
+        // initialDate.dispatchEvent(new Event("change"));
 
-      finalDate.value = "";
-      finalDate?.onchange();
-    });
+        initialDate?.onchange();
+      }
 
-    // get pages number
+      if (finalDate) {
+        finalDate.value = filter.finalDate ? filter.finalDate : "";
+        // finalDate.dispatchEvent(new Event("change"));
+
+        finalDate?.onchange();
+      }
+    }, filter);
+  }
+
+  public async getBudgets(params: GetBudgetHunterParams): Promise<void> {
+    console.log("\n[BUDGET]");
+
+    await this.page.waitForSelector("#btn_orcamentoview");
+    await this.page.click("#btn_orcamentoview");
+
     await this.page.waitForTimeout(3000);
 
-    const paginationLenght = await this.page.evaluate(async () => {
+    await this.setFilter(params.filter);
+
+    console.log("Starting to get budgets...");
+
+    await this.page.waitForTimeout(3000);
+
+    let paginationLenght = await this.page.evaluate(async () => {
       function navegatedOnFirstPage() {
         const firstButtonElementIsDisabled =
           document.querySelector(".first.disabled");
@@ -155,7 +199,10 @@ export class BudgetHunter {
 
     const budgetsHunted: BudgetHuntedDTO[] = [];
 
-    // paginationLenght = paginationLenghtDev;
+    paginationLenght =
+      params.huntPagesQuantity > 0
+        ? params.huntPagesQuantity
+        : paginationLenght;
 
     for (let index = 0; index < paginationLenght; index++) {
       // get budgets in table and normalize data
@@ -264,7 +311,7 @@ export class BudgetHunter {
       `);
 
       // eslint-disable-next-line prettier/prettier
-      if (index <= (paginationLenght - 1)) {
+      if (index < (paginationLenght - 1)) {
         await this.page.waitForTimeout(3000);
         await this.page.click(
           "#GRIDPAGINATIONBARContainer_DVPaginationBar .next"
@@ -295,6 +342,10 @@ export class BudgetHunter {
 
     let budgetsHunted = await this.budgetsHuntedInMemoryRepository.findAll();
 
+    /* Verificar no banco de dados e remover os pedidos do Array que já foram capturados.
+       Desta maneira irá capturar apenas os orçamentos necessarios.
+    */
+
     // const budgetItemsHuntedRepository = [] as BudgetItemHuntedDTO[];
 
     for (let index = 0; index < budgetsHunted.length; index++) {
@@ -303,11 +354,11 @@ export class BudgetHunter {
           waitUntil: "networkidle0",
         });
 
-        await this.page.waitForSelector("#W0085W0002GridContainerTbl");
+        await this.page.waitForSelector("#W0088W0002GridContainerTbl");
 
-        const values = await this.page.evaluate(async () => {
+        const budgetItemsHunted = await this.page.evaluate(async () => {
           const budgetItemsTableHeadElement = document.querySelectorAll(
-            ".Table table#W0085W0002GridContainerTbl thead>tr>th"
+            ".Table table#W0088W0002GridContainerTbl thead>tr>th"
           );
 
           const budgetItemsTableHeadNames = [] as string[];
@@ -329,7 +380,7 @@ export class BudgetHunter {
 
           const budgetItems = (
             document.querySelector(
-              "#W0085W0002GridContainerDataV"
+              "#W0088W0002GridContainerDataV"
             ) as HTMLInputElement
           ).value;
 
@@ -380,6 +431,7 @@ export class BudgetHunter {
           return { cardAmountRepository, budgetItemsHunted };
         });
 
+        let getLooseItems: LooseItemHuntedDTO[] = [];
         let stillCostHunted: StillCostHuntedDTO[] = [];
         let attachmentCostHunted: AttachmentCostHuntedDTO[] = [];
         let glassCostHunted: GlassCostHuntedDTO[] = [];
@@ -398,9 +450,13 @@ export class BudgetHunter {
         });
 
         if (linkElementExist) {
+          getLooseItems = await this.getLooseItems();
+
           await this.page.waitForTimeout(3000);
+
           await this.page.click(".panel.panel-green>a");
 
+          await this.page.waitForTimeout(3000);
           stillCostHunted = await this.getStill();
           attachmentCostHunted = await this.getAttachment();
           glassCostHunted = await this.getGlass();
@@ -409,20 +465,23 @@ export class BudgetHunter {
 
         const budgetsHuntedUpdated = {
           ...budgetsHunted[index],
-          ...values!.cardAmountRepository,
-          itens: values!.budgetItemsHunted,
+          ...budgetItemsHunted!.cardAmountRepository,
+          items: budgetItemsHunted!.budgetItemsHunted,
+          looseItems: getLooseItems,
           cost: {
             still: stillCostHunted,
             attachment: attachmentCostHunted,
             glass: glassCostHunted,
             kits: kitsCostHunted,
           },
-        };
+          captured: true,
+        } as BudgetHuntedDTO;
 
         await this.budgetsHuntedInMemoryRepository.update(budgetsHuntedUpdated);
 
         console.log(
           `
+          Loose Items: ${getLooseItems.length},
           Still Cost: ${stillCostHunted.length},
           Attachment Cost: ${attachmentCostHunted.length},
           Glass Cost: ${glassCostHunted.length},
@@ -443,55 +502,72 @@ export class BudgetHunter {
     createJsonFile("budgets", budgetsHunted);
   }
 
-  public async getLooseItems(): Promise<LooseItemsHuntedDTO[]> {
+  public async getLooseItems(): Promise<LooseItemHuntedDTO[]> {
     //get loose items
-
-    const looseItemsHeaderNames = await this.page.evaluate(async () => {
-      const tableHeaderNames = document.querySelectorAll(
-        "#W0085GridContainerTbl thead>tr>th"
-      );
-
-      const headNamesValues: string[] = [];
-      let index = 0;
-      for (const headName of tableHeaderNames) {
-        index++;
-        if (headName.innerText.trim() === "") {
-          headNamesValues.push(`void${index}`);
-        } else {
-          headNamesValues.push(
-            `${headName.innerText.replace(/[^A-Z0-9]+/gi, "")}${index}`
-          );
-        }
-      }
-
-      return headNamesValues;
+    await this.page.evaluate(async () => {
+      (document.querySelector("#TABLEICONS_0002") as HTMLElement).click();
     });
 
-    const looseItemsRowData = await this.page.evaluate(async () => {
-      const tableBodyRowElements = document.querySelectorAll(
-        "#W0085GridContainerTbl tbody>tr"
-      );
+    await this.page.waitForTimeout(3000);
 
-      const tableBodyData: string[][] = [];
-
-      for (const tableBodyRowElement of tableBodyRowElements) {
-        const collumnsElements = tableBodyRowElement.querySelectorAll("td");
-        const collumnData = [];
-        for (const collumnElement of collumnsElements) {
-          collumnData.push(collumnElement.innerText);
-        }
-        tableBodyData.push(collumnData);
-      }
-
-      return tableBodyData;
+    const looseItemsCount = await this.page.evaluate(async () => {
+      return document.querySelectorAll("#W0088GridContainerTbl tbody>tr")
+        .length;
     });
 
-    const looseItemsRepository = unionDataHunted<LooseItemsHuntedDTO>(
-      looseItemsHeaderNames,
-      looseItemsRowData
-    );
+    if (looseItemsCount > 0) {
+      const looseItemsHeaderNames = await this.page.evaluate(async () => {
+        const tableHeaderNames = document.querySelectorAll(
+          "#W0088GridContainerTbl thead>tr>th"
+        );
 
-    return looseItemsRepository;
+        const headNamesValues: string[] = [];
+        let index = 0;
+        for (const headName of tableHeaderNames) {
+          index++;
+          if ((headName as HTMLElement).innerText.trim() === "") {
+            headNamesValues.push(`void${index}`);
+          } else {
+            headNamesValues.push(
+              `${(headName as HTMLElement).innerText.replace(
+                /[^A-Z0-9]+/gi,
+                ""
+              )}${index}`
+            );
+          }
+        }
+
+        return headNamesValues;
+      });
+
+      const looseItemsRowData = await this.page.evaluate(async () => {
+        const tableBodyRowElements = document.querySelectorAll(
+          "#W0088GridContainerTbl tbody>tr"
+        );
+
+        const tableBodyData: string[][] = [];
+
+        for (const tableBodyRowElement of tableBodyRowElements) {
+          const collumnsElements = tableBodyRowElement.querySelectorAll("td");
+          const collumnData = [];
+          for (const collumnElement of collumnsElements) {
+            collumnData.push(collumnElement.innerText);
+          }
+          tableBodyData.push(collumnData);
+        }
+
+        return tableBodyData;
+      });
+
+      const looseItemsRepository = unionDataHunted<LooseItemHuntedDTO>(
+        looseItemsHeaderNames,
+        looseItemsRowData
+      );
+
+      return looseItemsRepository;
+    }
+
+    return [];
   }
 
   public async getStill(): Promise<StillCostHuntedDTO[]> {
@@ -599,7 +675,7 @@ export class BudgetHunter {
       });
 
       // eslint-disable-next-line prettier/prettier
-      if (index <= (paginationLenght - 1)) {
+      if (index < (paginationLenght - 1)) {
         await this.page.waitForTimeout(3000);
         await this.page.click(
           "#W0054GRIDPAGINATIONBARContainer_DVPaginationBar .next"
@@ -718,7 +794,7 @@ export class BudgetHunter {
       });
 
       // eslint-disable-next-line prettier/prettier
-      if (index <= (paginationLenght - 1)) {
+      if (index < (paginationLenght - 1)) {
         await this.page.waitForTimeout(3000);
         await this.page.click(
           "#W0062GRIDPAGINATIONBARContainer_DVPaginationBar .next"
@@ -837,7 +913,7 @@ export class BudgetHunter {
       });
 
       // eslint-disable-next-line prettier/prettier
-      if (index <= (paginationLenght - 1)) {
+      if (index < (paginationLenght - 1)) {
         await this.page.waitForTimeout(3000);
         await this.page.click(
           "#W0070GRIDPAGINATIONBARContainer_DVPaginationBar .next"
@@ -959,7 +1035,7 @@ export class BudgetHunter {
       });
 
       // eslint-disable-next-line prettier/prettier
-      if (index <= (paginationLenght - 1)) {
+      if (index < (paginationLenght - 1)) {
         await this.page.waitForTimeout(3000);
         await this.page.click(
           "#W0078GRIDPAGINATIONBARContainer_DVPaginationBar .next"
@@ -1102,7 +1178,7 @@ export class BudgetHunter {
       `);
 
       // eslint-disable-next-line prettier/prettier
-      if (index <= (paginationLenght - 1)) {
+      if (index < (paginationLenght - 1)) {
         await this.page.waitForTimeout(2000);
         await this.page.click(
           "#GRIDPAGINATIONBARContainer_DVPaginationBar .next"

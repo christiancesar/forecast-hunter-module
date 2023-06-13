@@ -1,5 +1,6 @@
 import { BudgetItemsDTO } from "./BudgetItemsDTO";
 import { CostDTO } from "./CostDTO";
+import { LooseItemDTO } from "./LooseItemDTO";
 
 export type BudgetDTO = {
   shortId: number;
@@ -17,6 +18,7 @@ export type BudgetDTO = {
     };
   };
   items: BudgetItemsDTO[];
+  looseItems: LooseItemDTO[];
   billedAt: Date | null;
   soldAt: Date | null;
   registeredAt: Date | null;
@@ -25,4 +27,5 @@ export type BudgetDTO = {
   status_producer: string;
   salesman: string;
   costs?: CostDTO;
+  captured: boolean;
 };

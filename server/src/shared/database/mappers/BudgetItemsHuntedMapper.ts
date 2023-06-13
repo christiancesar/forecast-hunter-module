@@ -7,7 +7,7 @@ class BudgetItemsHuntedMapper {
     return {
       order: Number(budgetItem.Ord3),
       budget_short_id: Number(budgetItem.NroOramento20),
-      license: Number(budgetItem.Licenca22),
+      license: Number(budgetItem.Licena22),
       description: budgetItem.Item26,
       quantity: amountStringToNumber(budgetItem.Qtd8),
       unit_amount: amountStringToNumber(budgetItem.VlrUnt9),
